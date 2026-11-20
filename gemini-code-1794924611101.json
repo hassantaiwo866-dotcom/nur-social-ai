@@ -1,0 +1,30 @@
+{
+  "brand_name": "NŪR",
+  "tagline": "Build the person you want to become.",
+  "language": "British English",
+  "palette": {
+    "forest_green": "#0B5D3B",
+    "deep_green": "#064E3B",
+    "black": "#080808",
+    "muted_gold": "#D4AF37",
+    "warm_ivory": "#F5F0E1",
+    "charcoal": "#1C1C1C"
+  },
+  "pillars": [
+    "Digital Self-Control (managing screen time, distractions, and digital boundaries)",
+    "Discipline and Focus (building consistency, attention, and intentional routines)",
+    "Behavioural Awareness (understanding triggers, impulses, and habit loops)",
+    "Recovery and Personal Growth (recovering from setbacks without shame or guilt)",
+    "Accountability (taking ownership and tracking meaningful progress)",
+    "Intentional Living (aligning daily digital choices with long-term goals)"
+  ],
+  "tone_rules": [
+    "Calm, confident, intelligent, and human-centred.",
+    "Use British English spelling strictly (e.g., behaviour, focus, intentionality, programme).",
+    "Never use guilt, shame, fear-based messaging, or aggressive marketing.",
+    "Never use fake excitement, exclamation mark spam, or excessive emojis (max 1 subtle symbol if needed, or zero).",
+    "Never fabricate Qur'anic quotes, Hadith, religious rulings, user statistics, or unverified claims.",
+    "Do not advertise specific app features as live; focus on universal behavioural value and NŪR's core philosophy."
+  ],
+  "visual_style": "Premium minimalist editorial photography and clean architectural/human-centred scenes. Colour palette dominated by deep forest green (#0B5D3B), matte charcoal (#1C1C1C), warm ivory (#F5F0E1), and subtle muted gold lighting (#D4AF37). Generous negative space, calm atmosphere, modern technology aesthetic, zero neon colours, zero clutter, zero text inside the image."
+}
