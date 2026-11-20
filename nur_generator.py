@@ -112,7 +112,34 @@ def generate_nur_content(brand: dict, history: list) -> dict:
             raw = raw[4:]
     return json.loads(raw.strip())
 
-def fetch_brand_image(prompt: str, width: int, height: int, save_path: str):
+def fetch_brand_image(prompt, width, height, filename):
+    encoded = urllib.parse.quote(f"{prompt}, ultra minimalist editorial photography, forest green #0B5D3B and warm ivory #F5F0E1 tones, calm lighting, high aesthetic, no words, no letters")
+    seed = random.randint(1, 999999)
+    url = f"https://image.pollinations.ai/prompt/{encoded}?width={width}&height={height}&seed={seed}&nologo=true"
+    
+    try:
+        res = requests.get(url, timeout=30)
+        if res.status_code == 200 and len(res.content) > 1000:
+            with open(filename, "wb") as f:
+                f.write(res.content)
+            return filename
+    except Exception as e:
+        print(f"Image API skipped ({e}), using NŪR branded studio canvas...")
+
+    # Fallback: Generate a clean, textured NŪR Forest Green & Gold minimalist backdrop
+    img = Image.new("RGB", (width, height), "#064E3B")
+    draw = ImageDraw.Draw(img)
+    for y in range(height):
+        ratio = y / height
+        r = int(6 + (11 - 6) * ratio)
+        g = int(78 + (93 - 78) * ratio)
+        b = int(59 + (59 - 59) * ratio)
+        draw.line([(0, y), (width, y)], fill=(r, g, b))
+    
+    margin = int(width * 0.08)
+    draw.rectangle([margin, margin, width - margin, height - margin], outline="#D4AF37", width=2)
+    img.save(filename)
+    return filename
     """Fetches a clean, watermark-free image matching NŪR's visual style."""
     full_prompt = f"{prompt}, ultra minimalist editorial photography, forest green #0B5D3B and warm ivory #F5F0E1 tones, calm lighting, high aesthetic, no words, no letters"
     encoded = urllib.parse.quote(full_prompt)
