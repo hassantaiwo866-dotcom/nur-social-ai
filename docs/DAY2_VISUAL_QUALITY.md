@@ -86,3 +86,11 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Direction alternates by scene to prevent repeated motion. The accent is time-limited and remains a small graphic detail, not a persistent distraction.
 - Stock-video and still-image scene renderers both use the motion accent filter. Source footage retains its natural colour.
 - Motion is rendered through FFmpeg; manual review is required for placement, visual collisions and timing on the final output.
+
+
+## Day 8 — animated editorial motion accents
+
+- A travelling emerald line animates across the masthead rule in documentary scenes and across the paper caption zone in collage scenes.
+- Its direction alternates by scene, and the motion naturally exits the frame after a short duration; it is not a persistent animated distraction.
+- Both stock-video and still-image renders apply the accent in FFmpeg. Stock footage retains natural colour.
+- Review placement and timing on actual outputs before publication; the automated test validates filter construction, not visual aesthetics.
