@@ -205,6 +205,8 @@ def join_video_segments(segments, destination, transition=0.35, transitions=None
         command.extend(["-i", str(item)])
 
     filters = []
+    transitions = list(transitions or [])
+    allowed_transitions = {"fade", "wipeleft", "wiperight", "slideleft", "slideright", "smoothleft", "smoothright", "circleopen", "soft_cut"}
     video_label = "[0:v]"
     audio_label = "[0:a]"
     elapsed = durations[0]
@@ -212,8 +214,13 @@ def join_video_segments(segments, destination, transition=0.35, transitions=None
         next_video = f"[v{index}]"
         next_audio = f"[a{index}]"
         offset = elapsed - transition
+        transition_name = transitions[index - 1] if index - 1 < len(transitions) else "fade"
+        if transition_name == "soft_cut":
+            transition_name = "fade"
+        if transition_name not in allowed_transitions:
+            transition_name = "fade"
         filters.append(
-            f"{video_label}[{index}:v]xfade=transition=fade:duration={transition}:"
+            f"{video_label}[{index}:v]xfade=transition={transition_name}:duration={transition}:"
             f"offset={offset:.3f}{next_video}"
         )
         filters.append(
