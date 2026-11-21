@@ -23,6 +23,11 @@ class FreeVisualModelTests(unittest.TestCase):
             self.assertTrue(result.exists())
             self.assertEqual(session.post.call_args.kwargs["json"]["model"], models.IMAGE_MODEL)
 
+    def test_image_requires_free_confirmation(self):
+        with patch.dict("os.environ", {"AGNES_API_KEY": "test", "AGNES_FREE_IMAGE_CONFIRMED": ""}):
+            with self.assertRaisesRegex(RuntimeError, "confirm"):
+                models.generate_image("scene", "x.png")
+
     def test_unknown_image_model_blocked(self):
         with self.assertRaisesRegex(RuntimeError, "allowlisted"):
             models.generate_image("x", "x.png", model="paid-model")
