@@ -6,9 +6,9 @@ Deliver generated Nūr media to a configured private Telegram chat so the owner 
 ## GitHub Actions secrets
 Configure these repository Actions secrets:
 - `TELEGRAM_BOT_TOKEN`: the token issued by BotFather for the existing Nūr bot.
-- `TELEGRAM_REVIEW_CHAT_ID`: the numeric chat ID of the private one-to-one review conversation (or a deliberately selected private review group).
+- `TELEGRAM_REVIEW_CHAT_ID`: optional preferred numeric chat ID for the private review conversation. If this is not set, the review step reuses the existing `TELEGRAM_CHAT_ID` secret.
 
-Do not put either value in source code, workflow literals, issue comments or chat messages. Start the bot conversation and send it a message before the first run so Telegram permits the bot to message that chat. Confirm that the configured chat ID is the intended private destination.
+Do not put either value in source code, workflow literals, issue comments or chat messages. Start the bot conversation and send it a message before the first run so Telegram permits the bot to message that chat. The existing `TELEGRAM_CHAT_ID` can be reused when it points to your private one-to-one conversation; no duplicate secret is required.
 
 ## Workflow
 1. Generate the editorial image, vertical video and metadata.
