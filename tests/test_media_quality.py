@@ -62,6 +62,25 @@ class MediaQualityTests(unittest.TestCase):
                 self.assertEqual(image.size, (1080, 1350))
                 self.assertEqual(image.format, "PNG")
 
+    @patch("media_quality._duration", side_effect=[4.0, 5.0, 6.0])
+    @patch("media_quality.subprocess.run")
+    def test_video_assembly_uses_video_and_audio_crossfades(self, run, duration):
+        from media_quality import join_video_segments
+        run.return_value.returncode = 0
+        with tempfile.TemporaryDirectory() as folder:
+            paths = []
+            for name in ("one.mp4", "two.mp4", "three.mp4"):
+                path = Path(folder) / name
+                path.write_bytes(b"placeholder")
+                paths.append(path)
+            output = Path(folder) / "joined.mp4"
+            join_video_segments(paths, output)
+        command = run.call_args.args[0]
+        filter_graph = command[command.index("-filter_complex") + 1]
+        self.assertEqual(filter_graph.count("xfade="), 2)
+        self.assertEqual(filter_graph.count("acrossfade="), 2)
+        self.assertIn("offset=3.650", filter_graph)
+
 
 if __name__ == "__main__":
     unittest.main()
