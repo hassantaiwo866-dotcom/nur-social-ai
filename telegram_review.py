@@ -39,7 +39,7 @@ def deliver_review(
     if not token or not chat_id:
         print(
             "Telegram review skipped: configure TELEGRAM_BOT_TOKEN and "
-            "TELEGRAM_REVIEW_CHAT_ID in GitHub Actions secrets."
+            "TELEGRAM_REVIEW_CHAT_ID or TELEGRAM_CHAT_ID in GitHub Actions secrets."
         )
         return False
 
