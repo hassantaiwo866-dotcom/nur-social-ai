@@ -86,7 +86,8 @@ class MediaQualityTests(unittest.TestCase):
         command = run.call_args.args[0]
         filter_graph = command[command.index("-filter_complex") + 1]
         self.assertEqual(filter_graph.count("xfade="), 2)
-        self.assertIn("transition=wipeleft", filter_graph)\n        self.assertIn("transition=smoothright", filter_graph)
+        self.assertIn("transition=wipeleft", filter_graph)
+        self.assertIn("transition=smoothright", filter_graph)
         self.assertEqual(filter_graph.count("acrossfade="), 2)
         self.assertIn("offset=3.650", filter_graph)
 
