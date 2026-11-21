@@ -19,7 +19,7 @@ class FreeVisualModelTests(unittest.TestCase):
             response.json.return_value = {"data": [{"b64_json": base64.b64encode(buffer.getvalue()).decode()}]}
             session = Mock()
             session.post.return_value = response
-            result = models.generate_image("emerald editorial", Path(folder) / "image.png", session=session)
+            with patch.dict("os.environ", {"AGNES_API_KEY": "test", "AGNES_FREE_IMAGE_CONFIRMED": "yes"}):\n                result = models.generate_image("emerald editorial", Path(folder) / "image.png", session=session)
             self.assertTrue(result.exists())
             self.assertEqual(session.post.call_args.kwargs["json"]["model"], models.IMAGE_MODEL)
 
