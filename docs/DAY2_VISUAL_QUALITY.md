@@ -78,3 +78,11 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Scene narration is concatenated sequentially, not crossfaded over the next speaker line. Video transitions remain independent.
 - The final audio is trimmed to the crossfaded video duration and normalized to a social-video target. No synthetic ambient tone or paid music source is introduced.
 - This is technical audio processing, not a substitute for listening to every generated voice track. Check clipping, pronunciation, pacing and naturalness during Telegram review.
+
+
+## Day 8 — animated editorial motion accents
+
+- Each rendered scene now receives a short, moving emerald accent line. It travels across the masthead rule for documentary scenes and the paper caption zone for collage styles.
+- Direction alternates by scene to prevent repeated motion. The accent is time-limited and remains a small graphic detail, not a persistent distraction.
+- Stock-video and still-image scene renderers both use the motion accent filter. Source footage retains its natural colour.
+- Motion is rendered through FFmpeg; manual review is required for placement, visual collisions and timing on the final output.
