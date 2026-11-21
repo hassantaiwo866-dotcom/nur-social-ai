@@ -28,7 +28,10 @@ def deliver_review(
     token = (token if token is not None else os.environ.get("TELEGRAM_BOT_TOKEN", "")).strip()
     chat_id = (
         chat_id if chat_id is not None
-        else os.environ.get("TELEGRAM_REVIEW_CHAT_ID", "")
+        else (
+            os.environ.get("TELEGRAM_REVIEW_CHAT_ID", "")
+            or os.environ.get("TELEGRAM_CHAT_ID", "")
+        )
     ).strip()
     output_dir = Path(output_dir) if output_dir else OUTPUT
     request_post = request_post or requests.post
