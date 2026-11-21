@@ -50,11 +50,17 @@ def generate_image(prompt: str, destination: str | Path, *, session=requests, ma
         json={"prompt": prompt.strip()[:2048], "steps": steps}, timeout=180,
     )
     response.raise_for_status()
-    payload = response.json()
-    encoded = payload.get("image") if isinstance(payload, dict) else None
-    if not encoded:
-        raise RuntimeError("Cloudflare response did not contain a base64 image.")
-    image_bytes = base64.b64decode(encoded, validate=True)
+    content_type = response.headers.get("Content-Type", "") if hasattr(response, "headers") else ""
+    if content_type.startswith("image/"):
+        image_bytes = response.content
+    else:
+        payload = response.json()
+        if isinstance(payload, dict) and isinstance(payload.get("result"), dict):
+            payload = payload["result"]
+        encoded = payload.get("image") if isinstance(payload, dict) else None
+        if not encoded:
+            raise RuntimeError("Cloudflare response did not contain a base64 image.")
+        image_bytes = base64.b64decode(encoded, validate=True)
     path = Path(destination)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(image_bytes)
