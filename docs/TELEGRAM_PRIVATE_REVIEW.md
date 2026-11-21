@@ -22,3 +22,8 @@ Do not put either value in source code, workflow literals, issue comments or cha
 
 ## Verification and limitations
 Unit tests mock Telegram API responses and verify credential skip, private chat routing, QA blocking and document fallback. They do not prove that the real bot token or chat ID is correct. A real workflow run is required to verify delivery. Telegram's Bot API and account/file-size constraints may affect inline playback; a document fallback preserves access to the MP4 but may require opening it manually.
+
+
+## Three-day batch review
+
+The production workflow now generates three independent packages in `output/day_01`, `output/day_02`, and `output/day_03`. Each day uses the updated topic history from the previous day to reduce repetition. Telegram review is invoked after each day's QA and sends that day's image and video to the same private review chat. The artifact includes all three packages. This is a batch of three daily packages, not a guarantee that the editorial plan's publication dates or timing are scheduled automatically. Public publishing remains disabled.
