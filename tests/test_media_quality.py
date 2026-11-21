@@ -115,3 +115,19 @@ class MediaQualityTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_collage_style_adds_tactile_paper_caption(self):
+        from media_quality import render_scene_frame, render_scene_overlay
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "source.jpg"
+            frame = Path(folder) / "collage.jpg"
+            overlay = Path(folder) / "collage.png"
+            Image.new("RGB", (720, 1280), (80, 100, 90)).save(source)
+            scene = {"beat": "RE-HOOK", "on_screen_text": "A different response is possible."}
+            render_scene_frame(source, scene, frame, 2, "tactile_editorial_collage")
+            render_scene_overlay(scene, overlay, 2, "hybrid_documentary_collage")
+            with Image.open(frame) as image:
+                self.assertEqual(image.size, (1080, 1920))
+            with Image.open(overlay) as image:
+                self.assertEqual(image.mode, "RGBA")
+                self.assertEqual(image.size, (1080, 1920))
