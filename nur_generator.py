@@ -148,53 +148,136 @@ def enforce_wordmark(value):
     )
 
 
-def generate_photo(prompt, width, height, destination):
-    full_prompt = (
-        f"{prompt}. Premium realistic editorial photography, "
-        "cinematic natural lighting, believable human environments, "
-        "authentic materials and detailed surroundings, "
-        "deep forest green and warm neutral colour grading, "
-        "35mm film character, careful composition, "
-        "no text, no typography, no logos, no watermarks, "
-        "no green-screen background."
-    )
 
-    encoded = urllib.parse.quote(full_prompt)
-    seed = random.randint(10000, 99999999)
+def _model_name(item):
+    return str(item.get("name") or item.get("id") or "").strip().rsplit("/", 1)[-1]
 
-    url = (
-        f"https://image.pollinations.ai/prompt/{encoded}"
-        f"?width={width}&height={height}"
-        f"&seed={seed}&nologo=true"
-    )
 
-    response = requests.get(url, timeout=120)
-    response.raise_for_status()
+def discover_gemini_model(api_key, preferred=None):
+    r=requests.get("https://generativelanguage.googleapis.com/v1beta/models",
+        headers={"x-goog-api-key":api_key},params={"pageSize":1000},timeout=30)
+    r.raise_for_status()
+    models=r.json().get("models",[])
+    names=[_model_name(m) for m in models if "generateContent" in m.get("supportedGenerationMethods",[])]
+    if preferred and preferred in names: return preferred
+    if not names: raise RuntimeError("Gemini account exposes no generateContent models.")
+    flash=sorted(n for n in names if "flash" in n.lower())
+    return (flash or sorted(names))[0]
 
-    if len(response.content) < 12000:
-        raise RuntimeError("Image service returned an invalid image.")
 
-    destination = Path(destination)
-    destination.write_bytes(response.content)
+def discover_groq_model(api_key, preferred=None):
+    r=requests.get("https://api.groq.com/openai/v1/models",
+        headers={"Authorization":f"Bearer {api_key}"},timeout=30)
+    r.raise_for_status()
+    names=[_model_name(m) for m in r.json().get("data",[]) if m.get("active",True)]
+    if preferred and preferred in names: return preferred
+    if not names: raise RuntimeError("Groq account exposes no active models.")
+    for n in ("llama-3.3-70b-versatile","llama-3.1-8b-instant"):
+        if n in names: return n
+    return sorted(names)[0]
 
+
+def provider_error(response):
+    try: detail=response.json()
+    except ValueError: detail=response.text
+    return f"HTTP {response.status_code}: {str(detail)[:500]}"
+
+
+ASSET_ATTRIBUTIONS=[]
+_USED_ASSET_IDS=set()
+
+
+def _clean_metadata(value):
+    import html, re
+    raw=value.get("value","") if isinstance(value,dict) else value or ""
+    return " ".join(html.unescape(re.sub(r"<[^>]+>"," ",str(raw))).split())
+
+
+def _commons_license_allowed(short_name, license_url):
+    label,url=str(short_name or "").lower(),str(license_url or "").lower()
+    if not label or not url or any(x in label for x in ("noncommercial","no derivatives","-nc","-nd")):
+        return False
+    return ("creativecommons.org/publicdomain/zero" in url or
+        "creativecommons.org/licenses/by/" in url or
+        "creativecommons.org/licenses/by-sa/" in url or "public domain" in label or "public domain" in url)
+
+
+def _normalise_download(content,width,height,destination):
+    destination=Path(destination)
+    if not content or len(content)<5000: raise RuntimeError("Image file is empty or unusually small.")
+    destination.write_bytes(content)
     try:
-        with Image.open(destination) as image:
-            image = ImageOps.fit(
-                image.convert("RGB"),
-                (width, height),
-                method=Image.Resampling.LANCZOS,
-            )
-            image.save(
-                destination,
-                format="JPEG",
-                quality=94,
-                optimize=True,
-            )
+        with Image.open(destination) as im: im.verify()
+        with Image.open(destination) as im:
+            if im.width<320 or im.height<240: raise RuntimeError("Image dimensions are too small.")
+            ImageOps.fit(im.convert("RGB"),(width,height),method=Image.Resampling.LANCZOS).save(destination,format="JPEG",quality=94,optimize=True)
     except Exception as exc:
         destination.unlink(missing_ok=True)
-        raise RuntimeError("Could not process generated image.") from exc
-
+        raise RuntimeError("Image could not be validated or processed.") from exc
     return destination
+
+
+def _search_pexels(query,width,height,destination):
+    key=os.environ.get("PEXELS_API_KEY","").strip()
+    if not key: raise RuntimeError("PEXELS_API_KEY is not configured.")
+    r=requests.get("https://api.pexels.com/v1/search",headers={"Authorization":key},
+        params={"query":query,"per_page":12,"orientation":"portrait" if height>width else "landscape"},timeout=30)
+    r.raise_for_status()
+    photos=[p for p in r.json().get("photos",[]) if str(p.get("id")) not in _USED_ASSET_IDS]
+    if not photos: raise RuntimeError("Pexels returned no unused matching photographs.")
+    p=random.choice(photos); src=p.get("src",{})
+    url=src.get("large2x") or src.get("large") or src.get("original")
+    if not url: raise RuntimeError("Pexels result has no usable image URL.")
+    img=requests.get(url,timeout=60); img.raise_for_status()
+    path=_normalise_download(img.content,width,height,destination)
+    _USED_ASSET_IDS.add(str(p.get("id")))
+    ASSET_ATTRIBUTIONS.append({"provider":"Pexels","asset_id":str(p.get("id")),
+        "photographer":p.get("photographer"),"source_page":p.get("url"),
+        "license":"Pexels License","license_url":"https://www.pexels.com/license/"})
+    return path
+
+
+def _search_commons(query,width,height,destination):
+    r=requests.get("https://commons.wikimedia.org/w/api.php",params={
+        "action":"query","generator":"search","gsrsearch":query,"gsrnamespace":6,"gsrlimit":15,
+        "prop":"imageinfo","iiprop":"url|extmetadata",
+        "iiextmetadatafilter":"LicenseShortName|LicenseUrl|Artist|Attribution|Restrictions","format":"json"},
+        headers={"User-Agent":"NurSocialAI/1.0 (editorial media sourcing)"},timeout=30)
+    r.raise_for_status()
+    pages=list(r.json().get("query",{}).get("pages",{}).values()); random.shuffle(pages)
+    for page in pages:
+        infos=page.get("imageinfo") or []
+        if not infos: continue
+        info=infos[0]; meta=info.get("extmetadata",{})
+        lic=_clean_metadata(meta.get("LicenseShortName")); licurl=_clean_metadata(meta.get("LicenseUrl"))
+        if _clean_metadata(meta.get("Restrictions")) or not _commons_license_allowed(lic,licurl): continue
+        aid=str(page.get("pageid") or page.get("title") or "")
+        if aid in _USED_ASSET_IDS: continue
+        url=info.get("thumburl") or info.get("url")
+        if not url: continue
+        try:
+            img=requests.get(url,timeout=60); img.raise_for_status()
+            path=_normalise_download(img.content,width,height,destination)
+            _USED_ASSET_IDS.add(aid)
+            ASSET_ATTRIBUTIONS.append({"provider":"Wikimedia Commons","asset_id":aid,
+                "title":page.get("title"),"creator":_clean_metadata(meta.get("Attribution") or meta.get("Artist")),
+                "source_page":info.get("descriptionurl"),"license":lic,"license_url":licurl})
+            return path
+        except Exception as exc: print(f"Skipping Commons result: {type(exc).__name__}: {str(exc)[:160]}")
+    raise RuntimeError("No unused Commons image with an accepted, identified licence was found.")
+
+
+def generate_photo(prompt,width,height,destination):
+    import re
+    query=" ".join(re.findall(r"[A-Za-z0-9']+",str(prompt)))[:180]
+    failures=[]
+    # Pollinations was removed after the production HTTP 402 failure.
+    for provider in (_search_pexels,_search_commons):
+        try: return provider(query,width,height,destination)
+        except Exception as exc:
+            failures.append(f"{provider.__name__}: {type(exc).__name__}: {str(exc)[:200]}")
+            print(f"{provider.__name__} unavailable: {type(exc).__name__}: {str(exc)[:200]}")
+    raise RuntimeError("No usable, licensed image source was available. "+" | ".join(failures))
 
 
 def generate_editorial_plan(brand, history):
@@ -289,7 +372,9 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
         try:
             print(f"Generating editorial plan with {provider.title()}...")
             if provider == "gemini":
-                model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+                preferred = os.environ.get("GEMINI_MODEL", "").strip() or None
+                model = discover_gemini_model(gemini_key, preferred)
+                print(f"Gemini selected available model: {model}")
                 response = requests.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
                     headers={"x-goog-api-key": gemini_key, "Content-Type": "application/json"},
@@ -300,10 +385,12 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
                     },
                     timeout=90,
                 )
-                response.raise_for_status()
+                if not response.ok: raise RuntimeError(provider_error(response))
                 raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
             else:
-                model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+                preferred = os.environ.get("GROQ_MODEL", "").strip() or None
+                model = discover_groq_model(groq_key, preferred)
+                print(f"Groq selected available model: {model}")
                 response = requests.post(
                     "https://api.groq.com/openai/v1/chat/completions",
                     headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
@@ -318,7 +405,7 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
                     },
                     timeout=90,
                 )
-                response.raise_for_status()
+                if not response.ok: raise RuntimeError(provider_error(response))
                 raw = response.json()["choices"][0]["message"]["content"]
             raw = str(raw or "").strip()
             if raw.startswith("```"):
@@ -330,7 +417,7 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
             print(f"Editorial plan generated successfully with {provider.title()}.")
             return plan
         except Exception as error:
-            print(f"{provider.title()} failed: {type(error).__name__}: {error}")
+            print(f"{provider.title()} failed: {type(error).__name__}: {str(error)[:600]}")
 
     if providers:
         print("All AI providers failed. Using the built-in editorial fallback.")
@@ -802,6 +889,8 @@ async def run_pipeline():
     print("1. Creating editorial plan...")
 
     plan = generate_editorial_plan(brand, history)
+    ASSET_ATTRIBUTIONS.clear()
+    _USED_ASSET_IDS.clear()
 
     with tempfile.TemporaryDirectory(
         prefix="nur_media_"
@@ -970,6 +1059,7 @@ async def run_pipeline():
                 "topic": plan["topic_slug"],
                 "image_caption": plan["caption_image"],
                 "video_caption": plan["caption_video"],
+                "assets": ASSET_ATTRIBUTIONS,
                 "qa": qa,
             },
         )
