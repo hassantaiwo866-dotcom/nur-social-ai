@@ -9,18 +9,18 @@ Order remains Gemini → Groq → local editorial fallback. Gemini is queried th
 Catalogue presence does not guarantee quota or successful inference. A real Actions run is still required to verify account access.
 
 ## Image sourcing
-Pollinations is removed after its HTTP 402 response.
-1. Pexels is attempted when `PEXELS_API_KEY` is configured.
-2. Wikimedia Commons is attempted when Pexels is absent or fails.
-3. Commons requires a licence URL and identified CC0, public-domain, CC BY or CC BY-SA licence. NC/ND and declared restrictions are rejected.
-4. Downloads are validated with Pillow, checked for minimum dimensions, cropped and encoded as JPEG.
-5. Assets are not intentionally reused in one run. Provider, asset ID, creator/photographer, source page and licence are recorded in `output/latest_post.json`.
-6. If no acceptable source is found, generation stops with a clear diagnostic.
+Pollinations and Pexels are not dependencies. Pexels' official API page and Help Centre currently state that new API key issuance is paused. Nūr does not require or request a Pexels key: https://www.pexels.com/api/
 
-Commons metadata can be incomplete or unreliable, particularly for multi-licensed works. This is a screening step, not legal advice. Human review must inspect the original file page, licence terms, attribution, watermarking, privacy/personality and trademark issues.
+1. Wikimedia Commons is the external image source.
+2. Commons results require a licence URL and identified CC0, public-domain, CC BY or CC BY-SA licence. NC/ND and declared restrictions are rejected.
+3. Downloads are validated with Pillow, checked for minimum dimensions, cropped and encoded as JPEG.
+4. Assets are not intentionally reused in one run. Provider, asset ID, creator, source page and licence are recorded in `output/latest_post.json`.
+5. If Commons is unavailable or no acceptable image is found, the pipeline generates original Nūr-coloured editorial artwork locally using Pillow. It is recorded as `illustration_not_photograph`, with original-artwork metadata. It is not represented as a stock photograph.
+
+Commons metadata can be incomplete or unreliable, particularly for multi-licensed works. This is a screening step, not legal advice. Human review must inspect the original file page, licence terms, attribution, watermarking, privacy/personality and trademark issues. Local illustrations also require human review for composition and relevance.
 
 ## Workflow and safeguards
-`PEXELS_API_KEY` is optional; Commons is the no-key fallback. Secrets stay in GitHub Actions settings. Existing local editorial fallback, branded graphic, four-scene video, voiceover and QA flow remain. QA still requires human review. Telegram retains `NUR_APPROVED=yes` and passing QA. No automatic social publishing is added.
+No Pexels secret is needed. Existing local editorial fallback, branded graphic, four-scene video, voiceover and QA flow remain. QA still requires human review. Telegram retains `NUR_APPROVED=yes` and passing QA. No automatic social publishing is added.
 
 ## Verification
-Unit tests cover model discovery/preference and Commons licence screening. A full Actions run with real secrets remains necessary to verify account access, quota, image sourcing, media assembly and final QA.
+Unit tests cover model discovery/preference, Commons licence screening and local illustration fallback. A full Actions run with real text-provider secrets remains necessary to verify account access, quota, live Commons sourcing or local fallback, media assembly and final QA.

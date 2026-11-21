@@ -36,6 +36,20 @@ class ProviderDiscoveryTests(unittest.TestCase):
         self.assertTrue(generator._commons_license_allowed("CC BY-SA 4.0","https://creativecommons.org/licenses/by-sa/4.0/"))
         self.assertTrue(generator._commons_license_allowed("Public domain","https://commons.wikimedia.org/wiki/Commons:Licensing"))
 
+    @patch("nur_generator._search_commons", side_effect=RuntimeError("no Commons result"))
+    def test_local_illustration_is_used_when_commons_fails(self, commons):
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        generator.ASSET_ATTRIBUTIONS.clear()
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "fallback.jpg"
+            result = generator.generate_photo("calm room and morning light", 480, 640, target)
+            self.assertTrue(result.exists())
+            with Image.open(result) as image:
+                self.assertEqual(image.size, (480, 640))
+            self.assertEqual(generator.ASSET_ATTRIBUTIONS[-1]["media_type"], "illustration_not_photograph")
+
     def test_commons_rejects_nc_nd_and_missing_url(self):
         self.assertFalse(generator._commons_license_allowed("CC BY-NC 4.0","https://creativecommons.org/licenses/by-nc/4.0/"))
         self.assertFalse(generator._commons_license_allowed("CC BY-ND 4.0","https://creativecommons.org/licenses/by-nd/4.0/"))

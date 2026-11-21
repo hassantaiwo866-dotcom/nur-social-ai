@@ -217,26 +217,6 @@ def _normalise_download(content,width,height,destination):
     return destination
 
 
-def _search_pexels(query,width,height,destination):
-    key=os.environ.get("PEXELS_API_KEY","").strip()
-    if not key: raise RuntimeError("PEXELS_API_KEY is not configured.")
-    r=requests.get("https://api.pexels.com/v1/search",headers={"Authorization":key},
-        params={"query":query,"per_page":12,"orientation":"portrait" if height>width else "landscape"},timeout=30)
-    r.raise_for_status()
-    photos=[p for p in r.json().get("photos",[]) if str(p.get("id")) not in _USED_ASSET_IDS]
-    if not photos: raise RuntimeError("Pexels returned no unused matching photographs.")
-    p=random.choice(photos); src=p.get("src",{})
-    url=src.get("large2x") or src.get("large") or src.get("original")
-    if not url: raise RuntimeError("Pexels result has no usable image URL.")
-    img=requests.get(url,timeout=60); img.raise_for_status()
-    path=_normalise_download(img.content,width,height,destination)
-    _USED_ASSET_IDS.add(str(p.get("id")))
-    ASSET_ATTRIBUTIONS.append({"provider":"Pexels","asset_id":str(p.get("id")),
-        "photographer":p.get("photographer"),"source_page":p.get("url"),
-        "license":"Pexels License","license_url":"https://www.pexels.com/license/"})
-    return path
-
-
 def _search_commons(query,width,height,destination):
     r=requests.get("https://commons.wikimedia.org/w/api.php",params={
         "action":"query","generator":"search","gsrsearch":query,"gsrnamespace":6,"gsrlimit":15,
@@ -267,17 +247,65 @@ def _search_commons(query,width,height,destination):
     raise RuntimeError("No unused Commons image with an accepted, identified licence was found.")
 
 
+def _generate_local_illustration(prompt, width, height, destination):
+    """Create original Nūr editorial artwork as a clearly labelled last resort."""
+    import hashlib
+
+    seed = int(hashlib.sha256(str(prompt).encode("utf-8")).hexdigest()[:8], 16)
+    rng = random.Random(seed)
+    image = Image.new("RGB", (width, height), "#F5F0E1")
+    draw = ImageDraw.Draw(image)
+    forest, green, ivory = "#064E3B", "#0B5D3B", "#F5F0E1"
+    gold, bronze, charcoal = "#D4AF37", "#A68A64", "#1C1C1C"
+    horizon = int(height * rng.uniform(0.55, 0.66))
+    margin = int(width * 0.12)
+    draw.rounded_rectangle((margin, int(height*.09), width-margin, horizon-int(height*.07)),
+        radius=max(8,width//70), fill="#E8DCC1", outline=bronze, width=max(2,width//300))
+    sun_r=max(12,min(width,height)//12)
+    sun_x=width//2+rng.randint(-width//8,width//8)
+    sun_y=int(height*.29)
+    draw.ellipse((sun_x-sun_r,sun_y-sun_r,sun_x+sun_r,sun_y+sun_r),fill=gold)
+    draw.ellipse((-width//3,horizon-int(height*.08),int(width*.72),horizon+int(height*.18)),fill=bronze)
+    draw.ellipse((int(width*.3),horizon-int(height*.14),width+width//3,horizon+int(height*.16)),fill=green)
+    draw.rectangle((0,horizon,width,height),fill=forest)
+    desk_y=int(height*.78)
+    draw.rectangle((0,desk_y,width,height),fill=charcoal)
+    bw,bh=int(width*.43),int(height*.13)
+    bx=(width-bw)//2; by=desk_y-int(height*.08)
+    draw.rounded_rectangle((bx,by,bx+bw,by+bh),radius=max(5,width//100),fill=ivory,outline=gold,width=max(2,width//300))
+    draw.line((width//2,by+8,width//2,by+bh-8),fill=bronze,width=max(1,width//500))
+    for n in range(3):
+        yy=by+int(bh*(.25+n*.22))
+        draw.line((bx+int(bw*.1),yy,width//2-int(width*.03),yy),fill=bronze,width=max(1,width//450))
+        draw.line((width//2+int(width*.03),yy,bx+int(bw*.9),yy),fill=bronze,width=max(1,width//450))
+    plant_x=int(width*.82)
+    draw.line((plant_x,desk_y,plant_x,desk_y-int(height*.15)),fill=ivory,width=max(2,width//220))
+    for dx,dy in [(-1,-1),(1,-1),(-1,-2),(1,-2)]:
+        ex=plant_x+dx*int(width*.05); ey=desk_y+dy*int(height*.045)
+        draw.ellipse((min(plant_x,ex)-width//35,min(desk_y-int(height*.15),ey)-height//60,
+                      max(plant_x,ex)+width//35,max(desk_y-int(height*.15),ey)+height//60),fill=green)
+    image.save(destination,format="JPEG",quality=93,optimize=True)
+    ASSET_ATTRIBUTIONS.append({
+        "provider":"Nūr Social AI local illustration",
+        "asset_id":hashlib.sha256(str(prompt).encode("utf-8")).hexdigest()[:16],
+        "creator":"Generated locally by Nūr Social AI",
+        "source_page":None,
+        "license":"Original generated artwork",
+        "license_url":None,
+        "media_type":"illustration_not_photograph",
+    })
+    return Path(destination)
+
+
 def generate_photo(prompt,width,height,destination):
     import re
     query=" ".join(re.findall(r"[A-Za-z0-9']+",str(prompt)))[:180]
-    failures=[]
-    # Pollinations was removed after the production HTTP 402 failure.
-    for provider in (_search_pexels,_search_commons):
-        try: return provider(query,width,height,destination)
-        except Exception as exc:
-            failures.append(f"{provider.__name__}: {type(exc).__name__}: {str(exc)[:200]}")
-            print(f"{provider.__name__} unavailable: {type(exc).__name__}: {str(exc)[:200]}")
-    raise RuntimeError("No usable, licensed image source was available. "+" | ".join(failures))
+    try:
+        return _search_commons(query,width,height,destination)
+    except Exception as exc:
+        print(f"Wikimedia Commons unavailable: {type(exc).__name__}: {str(exc)[:240]}")
+        print("Using built-in Nūr illustration fallback; this is not a photograph.")
+        return _generate_local_illustration(prompt,width,height,destination)
 
 
 def generate_editorial_plan(brand, history):
