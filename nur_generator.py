@@ -303,7 +303,7 @@ Use believable locations, objects, lighting and human activity.
             "X-Title": "Nur Editorial Pipeline",
         },
         json={
-            "model": "google/gemini-2.0-flash-001",
+            "model": "google/gemini-2.5-flash",
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
