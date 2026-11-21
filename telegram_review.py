@@ -33,7 +33,7 @@ def deliver_review(
             or os.environ.get("TELEGRAM_CHAT_ID", "")
         )
     ).strip()
-    output_dir = Path(output_dir) if output_dir else OUTPUT
+    output_dir = Path(output_dir) if output_dir else Path(os.environ.get("NUR_REVIEW_OUTPUT_DIR", "")).expanduser() if os.environ.get("NUR_REVIEW_OUTPUT_DIR", "").strip() else OUTPUT
     request_post = request_post or requests.post
 
     if not token or not chat_id:
