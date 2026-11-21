@@ -15,7 +15,7 @@ from pathlib import Path
 import edge_tts
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from media_quality import enhance_photo, render_scene_frame, join_video_segments
+from media_quality import enhance_photo, render_scene_frame, render_editorial_poster, join_video_segments
 
 
 ROOT = Path(__file__).resolve().parent
@@ -463,142 +463,8 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
 
 
 def build_editorial_graphic(plan, destination, photo_path):
-    graphic = plan["graphic"]
-    ivory_theme = graphic.get("theme") == "warm_ivory"
-
-    background = WARM_IVORY if ivory_theme else DEEP_FOREST
-    primary = CHARCOAL if ivory_theme else WARM_IVORY
-    secondary = "#4A4A4A" if ivory_theme else "#D6D1C4"
-    accent = EARTH_BRONZE if ivory_theme else MUTED_GOLD
-
-    width, height = 1080, 1350
-    canvas = Image.new("RGB", (width, height), background)
-    draw = ImageDraw.Draw(canvas)
-
-    draw.rectangle(
-        (48, 48, 1032, 1302),
-        outline=accent,
-        width=2,
-    )
-
-    logo_font = font(38, serif=True, bold=True)
-    label_font = font(17)
-    headline_font = font(49, serif=True, bold=True)
-    body_font = font(26)
-    footer_font = font(17)
-
-    draw.text(
-        (104, 88),
-        WORDMARK,
-        fill=primary,
-        font=logo_font,
-    )
-
-    label = str(
-        plan.get("pillar_label", "INTENTIONAL LIVING")
-    ).upper()
-
-    label_bounds = draw.textbbox(
-        (0, 0),
-        label,
-        font=label_font,
-    )
-
-    draw.text(
-        (976 - (label_bounds[2] - label_bounds[0]), 105),
-        label,
-        fill=accent,
-        font=label_font,
-    )
-
-    draw.line(
-        (104, 158, 976, 158),
-        fill=accent,
-        width=2,
-    )
-
-    with Image.open(photo_path) as photo:
-        photo = ImageOps.fit(
-            photo.convert("RGB"),
-            (872, 440),
-            method=Image.Resampling.LANCZOS,
-        )
-        canvas.paste(photo, (104, 190))
-
-    y = 680
-
-    headline_lines = wrap_text(
-        graphic["headline"],
-        headline_font,
-        draw,
-        872,
-    )
-
-    for line in headline_lines[:3]:
-        draw.text(
-            (104, y),
-            line,
-            fill=primary,
-            font=headline_font,
-        )
-        y += 61
-
-    y += 15
-
-    draw.line(
-        (104, y, 220, y),
-        fill=accent,
-        width=3,
-    )
-
-    y += 28
-
-    body_lines = wrap_text(
-        graphic["subtext"],
-        body_font,
-        draw,
-        872,
-    )
-
-    for line in body_lines[:3]:
-        draw.text(
-            (104, y),
-            line,
-            fill=secondary,
-            font=body_font,
-        )
-        y += 39
-
-    draw.line(
-        (104, 1190, 976, 1190),
-        fill=accent,
-        width=1,
-    )
-
-    draw.text(
-        (104, 1210),
-        TAGLINE,
-        fill=secondary,
-        font=footer_font,
-    )
-
-    edition = "Nūr EDITORIAL"
-    edition_bounds = draw.textbbox(
-        (0, 0),
-        edition,
-        font=footer_font,
-    )
-
-    draw.text(
-        (976 - (edition_bounds[2] - edition_bounds[0]), 1210),
-        edition,
-        fill=accent,
-        font=footer_font,
-    )
-
-    canvas.save(destination, format="PNG", optimize=True)
-
-    return destination
+    """Render a photo-led Nūr 4:5 editorial poster."""
+    return render_editorial_poster(plan, destination, photo_path)
 
 
 async def make_voiceover(text, destination):
