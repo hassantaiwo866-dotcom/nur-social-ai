@@ -92,15 +92,6 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("loudnorm=I=-16:TP=-1.5:LRA=11", filter_graph)
         self.assertIn("offset=3.650", filter_graph)
 
-    def test_motion_accent_filter_is_emerald_and_time_limited(self):
-        from media_quality import motion_accent_filter
-        filter_a = motion_accent_filter(0, 5, "cinematic_documentary")
-        filter_b = motion_accent_filter(1, 5, "tactile_editorial_collage")
-        self.assertIn("0B5D3B", filter_a)
-        self.assertIn("between(t", filter_a)
-        self.assertIn("y=1435", filter_b)
-        self.assertNotEqual(filter_a, filter_b)
-
     def test_motion_accent_filter_uses_emerald_and_alternates(self):
         from nur_generator import motion_accent_filter
         a = motion_accent_filter(0, "cinematic_documentary")
