@@ -56,6 +56,45 @@ def enhance_photo(path):
     return path
 
 
+def render_scene_overlay(scene, destination, scene_index=0):
+    """Create a transparent Nūr typography layer for genuine moving footage."""
+    overlay = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    for y in range(HEIGHT):
+        top_alpha = int(112 * max(0.0, 1.0 - y / 520))
+        bottom_start = int(HEIGHT * 0.58)
+        bottom_alpha = int(205 * max(0.0, (y - bottom_start) / (HEIGHT - bottom_start)))
+        alpha = max(top_alpha, bottom_alpha)
+        if alpha:
+            draw.line((0, y, WIDTH, y), fill=(4, 16, 12, alpha), width=1)
+    draw.text((76, 82), "Nūr", font=_font(43, serif=True, bold=True), fill=IVORY + (255,))
+    draw.line((78, 151, 1002, 151), fill=GOLD + (225,), width=2)
+    beat = str(scene.get("beat", f"SCENE {scene_index + 1}")).upper()
+    draw.text((80, 177), beat[:48], font=_font(20, bold=True), fill=GOLD + (255,))
+    caption = str(scene.get("on_screen_text", "")).strip()
+    size = 62
+    caption_font = _font(size, serif=True)
+    lines = _wrap(caption, caption_font, draw, 900)
+    while len(lines) > 3 and size > 42:
+        size -= 4
+        caption_font = _font(size, serif=True)
+        lines = _wrap(caption, caption_font, draw, 900)
+    if len(lines) > 3:
+        raise ValueError("Scene caption exceeds the visual-quality limit of three lines.")
+    y = 1480
+    draw.rounded_rectangle((80, 1435, 178, 1442), radius=3, fill=GOLD + (255,))
+    for line in lines:
+        draw.text((80, y), line, font=caption_font, fill=IVORY + (255,),
+                  stroke_width=1, stroke_fill=(0, 0, 0, 90))
+        y += int(size * 1.22)
+    for index in range(4):
+        left = 80 + index * 235
+        fill = GOLD + (255,) if index <= int(scene_index) else (245, 240, 225, 115)
+        draw.rounded_rectangle((left, 1830, left + 205, 1835), radius=3, fill=fill)
+    overlay.save(destination, format="PNG", optimize=True)
+    return Path(destination)
+
+
 def render_scene_frame(photo_path, scene, destination, scene_index=0):
     """Render a coherent premium vertical frame with readable, restrained type."""
     with Image.open(photo_path) as opened:

@@ -5,17 +5,18 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 ## Pipeline
 - Editorial plan: Gemini → Groq → built-in local fallback.
 - Models are discovered from each configured account's live model catalogue. `GEMINI_MODEL` and `GROQ_MODEL` are preferences used only when listed by that account.
-- Visuals: optional Gemini-generated imagery, optional Pixabay stock photos/video, Wikimedia Commons with licence screening, and locally rendered motion graphics. Provider adapters are documented in `docs/VISUAL_PROVIDER_SYSTEM.md`.
+- Visuals: optional Gemini-generated imagery, optional Pixabay stock photos/video, Wikimedia Commons with licence screening, and locally rendered motion graphics. Real Pixabay portrait footage is preferred for scenes when available; still imagery remains a fallback. Provider adapters are documented in `docs/VISUAL_PROVIDER_SYSTEM.md`.
 - Production: photo-led editorial poster, graded source photography, consistent vertical scene design, Edge TTS voiceover and FFmpeg crossfade assembly.
 - Human review remains mandatory. Telegram publishing retains its explicit `NUR_APPROVED=yes` gate and passing-QA requirement.
 
 ## GitHub Actions secrets
 - `GEMINI_API_KEY` — optional text provider.
 - `GROQ_API_KEY` — optional fallback text provider.
+- `PIXABAY_API_KEY` — optional stock photograph and portrait-video search.
 - `TELEGRAM_BOT_TOKEN` — optional bot token used only for private review delivery.
 - `TELEGRAM_REVIEW_CHAT_ID` — optional dedicated review chat ID; if omitted, the existing `TELEGRAM_CHAT_ID` is reused.
 
-Keep credentials in repository Actions secrets, never source files. At least one text provider key is recommended.
+Keep credentials in repository Actions secrets, never source files. Set the repository variable `ENABLE_GEMINI_IMAGE_GENERATION=true` to opt into paid Gemini image generation; it is disabled by default. At least one text provider key is recommended.
 
 ## Local run
 Python 3.11, FFmpeg and ffprobe are required.

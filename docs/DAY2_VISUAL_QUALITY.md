@@ -41,3 +41,21 @@ Raise the minimum visual standard of the existing editorial pipeline without int
 
 ## Verification
 Unit tests cover photo processing, vertical frame dimensions and caption overflow. CI must pass on the resulting commit. A fresh generated package must still be inspected on a phone before publication.
+
+
+## Day 4 — multi-source visual production
+
+- Added an optional visual-provider layer for Gemini image generation and Pixabay photo/video retrieval.
+- The poster and still-image scenes can use Gemini-generated imagery only when `ENABLE_GEMINI_IMAGE_GENERATION=true`; the existing Gemini text key alone does not trigger image generation.
+- Pixabay can supply both photographs and portrait video clips through the optional `PIXABAY_API_KEY` secret. Video downloads are checked with ffprobe before use.
+- Scene rendering now prefers actual portrait video footage when a usable Pixabay clip is returned. It places Nūr typography on a transparent overlay and uses the existing voiceover as the scene audio. If no clip is available, it falls back through the image-provider chain.
+- All external assets retain source and attribution metadata for manual review.
+
+### Required configuration
+- Add `PIXABAY_API_KEY` as an Actions secret to enable stock photo/video retrieval.
+- Set the Actions repository variable `ENABLE_GEMINI_IMAGE_GENERATION` to `true` only after confirming Gemini API billing. It is off by default.
+- No new provider key is required for Gemini image generation; the existing `GEMINI_API_KEY` is reused.
+
+### Limits
+- Pixabay search may not return a suitable portrait clip for every scene. The renderer falls back to still imagery.
+- Generated image and stock footage quality still require human inspection. Automated tests verify integration mechanics, not artistic quality or legal clearance.

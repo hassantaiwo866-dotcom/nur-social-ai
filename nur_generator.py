@@ -15,7 +15,8 @@ from pathlib import Path
 import edge_tts
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from media_quality import enhance_photo, render_scene_frame, render_editorial_poster, join_video_segments
+from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments
+from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
 
 
 ROOT = Path(__file__).resolve().parent
@@ -299,6 +300,26 @@ def _generate_local_illustration(prompt, width, height, destination):
 
 
 def generate_photo(prompt,width,height,destination):
+    """Choose an explicitly enabled AI image, stock photo, Commons photo, then illustration."""
+    destination = Path(destination)
+    if os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
+        try:
+            print("Generating an original scene image with Gemini...")
+            path = generate_gemini_image(
+                prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS
+            )
+            return enhance_photo(path)
+        except Exception as exc:
+            print(f"Gemini image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
+    if os.getenv("PIXABAY_API_KEY", "").strip():
+        try:
+            print("Searching Pixabay for a licensed editorial photograph...")
+            path = search_pixabay_photo(
+                prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS
+            )
+            return enhance_photo(path)
+        except Exception as exc:
+            print(f"Pixabay photo search unavailable: {type(exc).__name__}: {str(exc)[:240]}")
     import re
     query=" ".join(re.findall(r"[A-Za-z0-9']+",str(prompt)))[:180]
     try:
@@ -503,6 +524,25 @@ def probe_duration(path):
     ])
 
     return float(output)
+
+
+def make_video_segment_from_clip(
+    clip_path, overlay_path, audio_path, output_path, duration
+):
+    """Render a real portrait stock clip under a transparent Nūr scene overlay."""
+    run_command([
+        "ffmpeg", "-y", "-stream_loop", "-1",
+        "-i", str(clip_path), "-i", str(overlay_path), "-i", str(audio_path),
+        "-filter_complex",
+        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
+        "crop=1080:1920,setsar=1[background];"
+        "[background][1:v]overlay=0:0:format=auto,format=yuv420p[video]",
+        "-map", "[video]", "-map", "2:a",
+        "-af", "apad", "-t", str(duration), "-r", str(FPS),
+        "-c:v", "libx264", "-preset", "medium", "-crf", "19",
+        "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
+        "-shortest", "-movflags", "+faststart", str(output_path),
+    ])
 
 
 def make_video_segment(
@@ -801,39 +841,55 @@ async def run_pipeline():
         ):
             print(f"Scene {index + 1}/4")
 
-            photo = generate_photo(
-                scene["image_prompt"],
-                WIDTH,
-                HEIGHT,
-                temp / f"scene_{index}.jpg",
-            )
+            clip = None
+            if os.getenv("PIXABAY_API_KEY", "").strip():
+                try:
+                    print("Searching for real portrait video footage...")
+                    clip = search_pixabay_video(
+                        scene["image_prompt"],
+                        temp / f"scene_{index}.mp4",
+                        registry=ASSET_ATTRIBUTIONS,
+                    )
+                except Exception as exc:
+                    print(f"Stock video unavailable for scene {index + 1}: {type(exc).__name__}: {str(exc)[:220]}")
 
-            frame = build_scene_frame(
-                photo,
-                scene,
-                temp / f"frame_{index}.jpg",
-                scene_index=index,
-            )
+            photo = None
+            frame = None
+            overlay = None
+            if clip is None:
+                photo = generate_photo(
+                    scene["image_prompt"],
+                    WIDTH,
+                    HEIGHT,
+                    temp / f"scene_{index}.jpg",
+                )
+                frame = build_scene_frame(
+                    photo,
+                    scene,
+                    temp / f"frame_{index}.jpg",
+                    scene_index=index,
+                )
+            else:
+                overlay = render_scene_overlay(
+                    scene,
+                    temp / f"overlay_{index}.png",
+                    scene_index=index,
+                )
 
             audio = temp / f"voice_{index}.mp3"
-
-            await make_voiceover(
-                scene["voiceover"],
-                audio,
-            )
-
+            await make_voiceover(scene["voiceover"], audio)
             duration = probe_duration(audio) + 0.6
-
             segment = temp / f"segment_{index}.mp4"
 
-            make_video_segment(
-                frame,
-                audio,
-                segment,
-                duration,
-                zoom=True,
-                scene_index=index,
-            )
+            if clip is not None:
+                make_video_segment_from_clip(
+                    clip, overlay, audio, segment, duration
+                )
+            else:
+                make_video_segment(
+                    frame, audio, segment, duration,
+                    zoom=True, scene_index=index,
+                )
 
             segments.append(segment)
 
