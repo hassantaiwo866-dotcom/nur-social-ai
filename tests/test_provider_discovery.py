@@ -50,6 +50,29 @@ class ProviderDiscoveryTests(unittest.TestCase):
                 self.assertEqual(image.size, (480, 640))
             self.assertEqual(generator.ASSET_ATTRIBUTIONS[-1]["media_type"], "illustration_not_photograph")
 
+
+    def test_scene_caption_layouts_are_not_identical(self):
+        layouts = [generator.scene_caption_layout(index) for index in range(4)]
+        self.assertEqual(len({(item["left"], item["right"], item["align"]) for item in layouts}), 4)
+
+    def test_scene_frame_renders_vertical_output(self):
+        import tempfile
+        from pathlib import Path
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "source.jpg"
+            target = Path(folder) / "scene.jpg"
+            Image.new("RGB", (540, 960), "#064E3B").save(source)
+            generator.build_scene_frame(
+                source,
+                {"beat": "01 - THE HOOK", "on_screen_text": "Choose one helpful next step."},
+                target,
+                scene_index=1,
+            )
+            self.assertTrue(target.exists())
+            with Image.open(target) as rendered:
+                self.assertEqual(rendered.size, (1080, 1920))
+
     def test_commons_rejects_nc_nd_and_missing_url(self):
         self.assertFalse(generator._commons_license_allowed("CC BY-NC 4.0","https://creativecommons.org/licenses/by-nc/4.0/"))
         self.assertFalse(generator._commons_license_allowed("CC BY-ND 4.0","https://creativecommons.org/licenses/by-nd/4.0/"))
