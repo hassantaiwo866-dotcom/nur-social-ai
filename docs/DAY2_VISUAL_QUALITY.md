@@ -27,6 +27,7 @@ The source changes and unit tests are committed to the stabilisation branch. Git
 Raise the minimum visual standard of the existing editorial pipeline without introducing a new paid API, weakening licence screening, or making generated illustrations look like photographs.
 
 ## Changes
+- The 4:5 social graphic is now photo-led: a large rounded hero image, restrained Nūr masthead, strong headline hierarchy and a clean editorial footer replace the smaller inset-photo layout.
 - All selected source photographs receive restrained finishing: EXIF orientation correction, tonal balancing, modest colour/contrast adjustment and sharpening. No scene details are fabricated.
 - Video scenes use one consistent editorial system: a restrained masthead, clear scene label, open lower-third typography, readable contrast and a four-part progress marker. This replaces the inconsistent caption-panel layouts.
 - Scene joins use short video fades and audio crossfades rather than abrupt concatenation.
