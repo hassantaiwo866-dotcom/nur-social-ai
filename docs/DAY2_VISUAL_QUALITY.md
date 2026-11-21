@@ -68,3 +68,6 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Warm ivory `#F5F0E1`, charcoal `#1C1C1C` and muted gold `#D4AF37` remain supporting colours.
 - Photography and footage retain natural colour. Green is carried by graphic identity, overlays and motion design—not by indiscriminately tinting source footage.
 - Poster layout remains photo-led; green is used as a restrained editorial accent rather than a large colour wash.
+
+
+## Day 6 — scene-specific transitions and emerald branding\n\n- Video assembly accepts a transition per scene boundary, with an explicit allowlist of FFmpeg xfade transitions. Unsupported values safely fall back to fade.\n- The story plan's transition metadata is passed to the final assembly rather than ignored. The closing card uses a restrained fade.\n- Nūr primary emerald `#0B5D3B` remains the signature graphic colour; source footage is not recoloured to green.\n- The transition system currently supports fades, wipes, slides, smooth slides and circle-open. Avoid overusing flashy transitions; the editorial default remains a fade.\n
