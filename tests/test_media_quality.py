@@ -88,7 +88,8 @@ class MediaQualityTests(unittest.TestCase):
         self.assertEqual(filter_graph.count("xfade="), 2)
         self.assertIn("transition=wipeleft", filter_graph)
         self.assertIn("transition=smoothright", filter_graph)
-        self.assertIn("concat=n=3:v=0:a=1", filter_graph)\n        self.assertIn("loudnorm=I=-16:TP=-1.5:LRA=11", filter_graph)
+        self.assertIn("concat=n=3:v=0:a=1", filter_graph)
+        self.assertIn("loudnorm=I=-16:TP=-1.5:LRA=11", filter_graph)
         self.assertIn("offset=3.650", filter_graph)
 
     @patch("media_quality.subprocess.run")
