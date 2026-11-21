@@ -32,3 +32,12 @@ The provider adapters are implemented and unit-tested independently. The next in
 - Free-only allowlisting blocks other model IDs. Video requires `AGNES_FREE_VIDEO_CONFIRMED=yes` because the $0 offer is promotional and may change; verify it in your account before running. No paid fallback exists.
 - The planned third model (Replicate MiniMax Video-01) is recorded but disabled because free trial access is not guaranteed. It is not called.
 - These adapters are not yet wired into production scene/poster selection; tests use mocked provider responses. Next step: connect opt-in image generation as a fallback and AI video only when stock video misses, with one-video-per-day cap.
+
+
+## Production integration — Agnes free visual models
+
+- `AGNES_API_KEY` is an optional Actions secret. Image model opt-in uses the `ENABLE_AGNES_IMAGE_GENERATION` repository variable and the allowlisted `agnes-image-2.5-flash` model. It is used as an image fallback before Pixabay/Commons/local art.
+- Video model opt-in uses `ENABLE_AGNES_VIDEO_GENERATION` and `AGNES_FREE_VIDEO_CONFIRMED=yes`; only `agnes-video-2.5-flash`, 720P, 4 seconds is allowed. It is attempted only if Pixabay did not return a usable clip and is capped at one generated video per batch day.
+- `NUR_FREE_ONLY=true` is passed in production. Gemini image generation (paid) is blocked under this default; no paid provider fallback is invoked.
+- Video free pricing is promotional. Verify current $0 price in the provider console before enabling; if uncertain, keep it off. Provider adapters use mocked tests only and live API output has not been verified.
+- Replicate MiniMax Video-01 is the planned third model but remains disabled; trial credits are not a guaranteed free service. No integration can charge through this pipeline.
