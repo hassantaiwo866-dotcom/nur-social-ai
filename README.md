@@ -6,7 +6,7 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 - Editorial plan: Gemini → Groq → built-in local fallback.
 - Models are discovered from each configured account's live model catalogue. `GEMINI_MODEL` and `GROQ_MODEL` are preferences used only when listed by that account.
 - Visuals: Wikimedia Commons with licence screening and recorded attribution; a built-in original editorial illustration is the no-key fallback.
-- Production: branded editorial graphic, four-scene vertical video, Edge TTS voiceover and FFmpeg assembly.
+- Production: branded editorial graphic, graded source photography, consistent vertical scene design, Edge TTS voiceover and FFmpeg crossfade assembly.
 - Human review remains mandatory. Telegram publishing retains its explicit `NUR_APPROVED=yes` gate and passing-QA requirement.
 
 ## GitHub Actions secrets
