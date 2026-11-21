@@ -6,7 +6,7 @@ Improve the generated social media package without replacing the existing provid
 ## Changes
 - Scene caption panels now use four deliberate layouts rather than repeating one identical bottom panel. Text alignment and panel width vary by scene while preserving Nūr's forest, ivory and muted-gold palette.
 - Caption text is measured and reduced in size when necessary. If it still cannot fit within three lines, generation stops with a clear error instead of silently clipping the message.
-- Each scene receives a restrained, slow zoom treatment during FFmpeg rendering.
+- Each scene receives a restrained slow zoom and alternating camera drift during FFmpeg rendering, so adjacent scenes do not all move in the same direction.
 - Editorial-plan validation requires four distinct scene image prompts. QA repeats this check before the output is marked as passed.
 - Added unit tests for the four scene layouts and vertical scene-frame rendering.
 
