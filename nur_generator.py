@@ -603,7 +603,18 @@ async def make_voiceover(text, destination):
     await speech.save(str(destination))
 
 
-def build_scene_frame(photo_path, scene, destination):
+def scene_caption_layout(scene_index):
+    """Return a repeatable but varied caption-panel layout for each scene."""
+    layouts = (
+        {"left": 58, "right": WIDTH - 58, "align": "center"},
+        {"left": 58, "right": 790, "align": "left"},
+        {"left": 290, "right": WIDTH - 58, "align": "left"},
+        {"left": 104, "right": WIDTH - 104, "align": "center"},
+    )
+    return layouts[int(scene_index) % len(layouts)]
+
+
+def build_scene_frame(photo_path, scene, destination, scene_index=0):
     with Image.open(photo_path) as image:
         frame = ImageOps.fit(
             image.convert("RGB"),
@@ -612,14 +623,12 @@ def build_scene_frame(photo_path, scene, destination):
         )
 
     draw = ImageDraw.Draw(frame, "RGBA")
-
     draw.text(
         (76, 100),
         WORDMARK,
         fill=(245, 240, 225, 245),
         font=font(38, serif=True, bold=True),
     )
-
     draw.text(
         (78, 151),
         scene["beat"].upper(),
@@ -627,47 +636,79 @@ def build_scene_frame(photo_path, scene, destination):
         font=font(19),
     )
 
-    panel_top = 1390
-
-    draw.rounded_rectangle(
-        (58, panel_top, WIDTH - 58, 1780),
-        radius=18,
-        fill=(8, 8, 8, 190),
-        outline=(212, 175, 55, 180),
-        width=2,
-    )
-
+    layout = scene_caption_layout(scene_index)
+    panel_left, panel_right = layout["left"], layout["right"]
+    panel_width = panel_right - panel_left
     caption_font = font(43, serif=True)
-
     lines = wrap_text(
         scene["on_screen_text"],
         caption_font,
         draw,
-        WIDTH - 180,
+        panel_width - 76,
     )
 
-    y = panel_top + 75
-
-    for line in lines[:3]:
-        bounds = draw.textbbox(
-            (0, 0),
-            line,
-            font=caption_font,
+    if len(lines) > 3:
+        caption_font = font(37, serif=True)
+        lines = wrap_text(
+            scene["on_screen_text"],
+            caption_font,
+            draw,
+            panel_width - 76,
         )
+    if len(lines) > 3:
+        caption_font = font(32, serif=True)
+        lines = wrap_text(
+            scene["on_screen_text"],
+            caption_font,
+            draw,
+            panel_width - 76,
+        )
+    lines = lines[:3]
 
-        x = (WIDTH - (bounds[2] - bounds[0])) // 2
+    line_height = 62 if caption_font.size >= 37 else 48
+    panel_height = max(210, 88 + len(lines) * line_height)
+    panel_bottom = 1790
+    panel_top = panel_bottom - panel_height
 
+    draw.rounded_rectangle(
+        (panel_left, panel_top, panel_right, panel_bottom),
+        radius=22,
+        fill=(8, 8, 8, 205),
+        outline=(212, 175, 55, 210),
+        width=2,
+    )
+
+    y = panel_top + (panel_height - len(lines) * line_height) // 2
+    for line in lines:
+        bounds = draw.textbbox((0, 0), line, font=caption_font)
+        text_width = bounds[2] - bounds[0]
+        if layout["align"] == "center":
+            x = panel_left + (panel_width - text_width) // 2
+        else:
+            x = panel_left + 34
         draw.text(
             (x, y),
             line,
             fill=(245, 240, 225, 255),
             font=caption_font,
         )
+        y += line_height
 
-        y += 62
+    # A restrained scene-progress marker gives the sequence a clear rhythm.
+    progress_y = 1840
+    draw.rounded_rectangle(
+        (78, progress_y, WIDTH - 78, progress_y + 5),
+        radius=3,
+        fill=(245, 240, 225, 105),
+    )
+    progress_right = 78 + int((WIDTH - 156) * ((int(scene_index) + 1) / 4))
+    draw.rounded_rectangle(
+        (78, progress_y, progress_right, progress_y + 5),
+        radius=3,
+        fill=(212, 175, 55, 245),
+    )
 
     frame.save(destination, format="JPEG", quality=94)
-
     return destination
 
 
@@ -689,10 +730,13 @@ def make_video_segment(
     output_path,
     duration,
     zoom=True,
+    scene_index=0,
 ):
     if zoom:
         video_filter = (
-            "zoompan=z='min(zoom+0.00035,1.035)':"
+            "zoompan=z='min(1+0.00085*on,1.055)':"
+            "x='(iw-iw/zoom)*0.5':"
+            "y='(ih-ih/zoom)*0.5':"
             "d=1:s=1080x1920:fps=24,"
             "format=yuv420p"
         )
@@ -965,6 +1009,7 @@ async def run_pipeline():
                 photo,
                 scene,
                 temp / f"frame_{index}.jpg",
+                scene_index=index,
             )
 
             audio = temp / f"voice_{index}.mp3"
@@ -984,6 +1029,7 @@ async def run_pipeline():
                 segment,
                 duration,
                 zoom=True,
+                scene_index=index,
             )
 
             segments.append(segment)
