@@ -13,10 +13,11 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 - `GEMINI_API_KEY` — optional text provider.
 - `GROQ_API_KEY` — optional fallback text provider.
 - `PIXABAY_API_KEY` — optional stock photograph and portrait-video search.
+- `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` — optional Cloudflare Workers AI image generation credentials.
 - `TELEGRAM_BOT_TOKEN` — optional bot token used only for private review delivery.
 - `TELEGRAM_REVIEW_CHAT_ID` — optional dedicated review chat ID; if omitted, the existing `TELEGRAM_CHAT_ID` is reused.
 
-Keep credentials in repository Actions secrets, never source files. Set the repository variable `ENABLE_GEMINI_IMAGE_GENERATION=true` to opt into paid Gemini image generation; it is disabled by default. At least one text provider key is recommended.
+Keep credentials in repository Actions secrets, never source files. Cloudflare image generation is disabled by default. To use it, keep the account on the **Workers Free plan**, add the two Cloudflare values above as Actions secrets, then set repository variables `CLOUDFLARE_FREE_PLAN_CONFIRMED=yes` and `ENABLE_CLOUDFLARE_IMAGE_GENERATION=true`. The pipeline allows at most five FLUX.1 Schnell images per Python run and never switches to a paid provider. Do not use a Workers Paid account for this free-only setup. Gemini image generation remains paid and disabled in the normal free-only workflow. At least one text provider key is recommended.
 
 ## Local run
 Python 3.11, FFmpeg and ffprobe are required.
