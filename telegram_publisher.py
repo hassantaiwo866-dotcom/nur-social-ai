@@ -39,11 +39,15 @@ def deliver_to_telegram():
 
     img_path = "nur_post.png"
     vid_path = "nur_reel.mp4"
+    qa_report = meta.get("qa_report", "")
 
     if os.path.exists(img_path):
         send_photo(img_path, f"Nūr — EDITORIAL GRAPHIC\n\n{meta['image_caption']}")
     if os.path.exists(vid_path):
-        send_video(vid_path, f"Nūr — CINEMATIC FILM\n\n{meta['video_caption']}")
+        video_msg = f"Nūr — CINEMATIC FILM\n\n{meta['video_caption']}"
+        if qa_report:
+            video_msg += f"\n\n---\n{qa_report}"
+        send_video(vid_path, video_msg)
 
     print("Successfully delivered Nūr assets to Telegram.")
 
