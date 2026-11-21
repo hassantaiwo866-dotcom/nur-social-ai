@@ -76,6 +76,24 @@ class TelegramReviewTests(unittest.TestCase):
             ))
             self.assertIn("/sendDocument", post.call_args_list[2].args[0])
 
+    def test_reuses_existing_telegram_chat_id_when_review_id_is_missing(self):
+        import os
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            self.make_output(folder)
+            post = Mock(return_value=self.response())
+            with patch.dict(os.environ, {
+                "TELEGRAM_BOT_TOKEN": "test-token",
+                "TELEGRAM_CHAT_ID": "private-chat",
+            }, clear=True):
+                self.assertTrue(telegram_review.deliver_review(
+                    output_dir=folder, request_post=post,
+                ))
+            self.assertEqual(
+                post.call_args_list[0].kwargs["data"]["chat_id"],
+                "private-chat",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
