@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from PIL import Image
 
-from media_quality import enhance_photo, render_scene_frame
+from media_quality import enhance_photo, render_scene_frame, render_editorial_poster
 
 
 class MediaQualityTests(unittest.TestCase):
@@ -44,6 +44,23 @@ class MediaQualityTests(unittest.TestCase):
                     {"beat": "HOOK", "on_screen_text": " ".join(["unusuallylongword"] * 30)},
                     target,
                 )
+
+    def test_editorial_poster_is_photo_led_4_by_5(self):
+        with tempfile.TemporaryDirectory() as folder:
+            photo = Path(folder) / "photo.jpg"
+            target = Path(folder) / "poster.png"
+            Image.new("RGB", (1000, 700), (75, 105, 85)).save(photo)
+            plan = {
+                "pillar_label": "INTENTIONAL LIVING",
+                "graphic": {
+                    "headline": "Make room for a better choice",
+                    "subtext": "Pause, notice what you need, and take one useful step.",
+                },
+            }
+            render_editorial_poster(plan, target, photo)
+            with Image.open(target) as image:
+                self.assertEqual(image.size, (1080, 1350))
+                self.assertEqual(image.format, "PNG")
 
 
 if __name__ == "__main__":
