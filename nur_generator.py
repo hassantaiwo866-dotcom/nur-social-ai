@@ -533,7 +533,7 @@ async def run_pipeline():
     print("3. Creating Nūr cinematic vertical film with ambient soundbed (1080x1920)...")
     _, vid_duration = await build_cinematic_reel(plan, "nur_reel.mp4")
 
-    print("4. Runt)
+    print("4. Running Nūr Section 8 automated QA gate...")
         y_cursor += 64
 
     y_cursor += 18
