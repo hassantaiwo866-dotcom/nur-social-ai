@@ -34,7 +34,8 @@ jobs:
 
       - name: Generate Nūr media
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           python nur_generator.py
 
@@ -58,3 +59,4 @@ jobs:
             git commit -m "Update Nūr topic history"
             git push
           )
+          
