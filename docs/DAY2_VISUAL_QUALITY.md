@@ -59,3 +59,12 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 ### Limits
 - Pixabay search may not return a suitable portrait clip for every scene. The renderer falls back to still imagery.
 - Generated image and stock footage quality still require human inspection. Automated tests verify integration mechanics, not artistic quality or legal clearance.
+
+
+## Nūr primary colour standard — Day 5
+
+- Emerald green `#0B5D3B` is the primary brand colour across generated media. It is used for scene masthead rules, caption accents, progress markers and closing-card backgrounds.
+- Deep forest `#064E3B` is a secondary depth colour, not a replacement for the primary emerald.
+- Warm ivory `#F5F0E1`, charcoal `#1C1C1C` and muted gold `#D4AF37` remain supporting colours.
+- Photography and footage retain natural colour. Green is carried by graphic identity, overlays and motion design—not by indiscriminately tinting source footage.
+- Poster layout remains photo-led; green is used as a restrained editorial accent rather than a large colour wash.
