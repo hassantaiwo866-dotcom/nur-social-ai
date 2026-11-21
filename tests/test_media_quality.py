@@ -82,11 +82,11 @@ class MediaQualityTests(unittest.TestCase):
                 path.write_bytes(b"placeholder")
                 paths.append(path)
             output = Path(folder) / "joined.mp4"
-            join_video_segments(paths, output)
+            join_video_segments(paths, output, transitions=["wipeleft", "smoothright"])
         command = run.call_args.args[0]
         filter_graph = command[command.index("-filter_complex") + 1]
         self.assertEqual(filter_graph.count("xfade="), 2)
-        self.assertIn("transition=fade", filter_graph)
+        self.assertIn("transition=wipeleft", filter_graph)\n        self.assertIn("transition=smoothright", filter_graph)
         self.assertEqual(filter_graph.count("acrossfade="), 2)
         self.assertIn("offset=3.650", filter_graph)
 
