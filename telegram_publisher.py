@@ -1,55 +1,88 @@
-import os
 import json
+import os
+from pathlib import Path
+
 import requests
+
+ROOT = Path(__file__).resolve().parent
+OUTPUT = ROOT / "output"
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+APPROVED = os.environ.get("NUR_APPROVED", "").strip().lower() == "yes"
 
 
-def send_photo(photo_path, caption):
-    url = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/sendPhoto"
-    with open(photo_path, "rb") as photo:
+def send_file(endpoint, field_name, file_path, caption):
+    url = f"https://api.telegram.org/bot{TOKEN}/{endpoint}"
+
+    with open(file_path, "rb") as media:
         response = requests.post(
             url,
-            data={"chat_id": CHAT_ID, "caption": caption[:1024]},
-            files={"photo": photo},
-            timeout=60,
+            data={
+                "chat_id": CHAT_ID,
+                "caption": caption[:1024],
+            },
+            files={field_name: media},
+            timeout=180,
         )
-    response.raise_for_status()
 
-
-def send_video(video_path, caption):
-    url = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/sendVideo"
-    with open(video_path, "rb") as video:
-        response = requests.post(
-            url,
-            data={"chat_id": CHAT_ID, "caption": caption[:1024], "supports_streaming": True},
-            files={"video": video},
-            timeout=120,
-        )
     response.raise_for_status()
+    result = response.json()
+
+    if not result.get("ok"):
+        raise RuntimeError(f"Telegram rejected the upload: {result}")
 
 
 def deliver_to_telegram():
+    if not APPROVED:
+        raise RuntimeError(
+            "Publishing blocked. Set NUR_APPROVED=yes only after "
+            "personally reviewing and approving the assets."
+        )
+
     if not TOKEN or not CHAT_ID:
-        raise ValueError("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID")
+        raise RuntimeError(
+            "Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID."
+        )
 
-    with open("latest_post.json", "r", encoding="utf-8") as f:
-        meta = json.load(f)
+    metadata_path = OUTPUT / "latest_post.json"
+    image_path = OUTPUT / "nur_post.png"
+    video_path = OUTPUT / "nur_reel.mp4"
 
-    img_path = "nur_post.png"
-    vid_path = "nur_reel.mp4"
-    qa_report = meta.get("qa_report", "")
+    if not metadata_path.exists():
+        raise FileNotFoundError("No latest_post.json was found.")
 
-    if os.path.exists(img_path):
-        send_photo(img_path, f"Nūr — EDITORIAL GRAPHIC\n\n{meta['image_caption']}")
-    if os.path.exists(vid_path):
-        video_msg = f"Nūr — CINEMATIC FILM\n\n{meta['video_caption']}"
-        if qa_report:
-            video_msg += f"\n\n---\n{qa_report}"
-        send_video(vid_path, video_msg)
+    if not image_path.exists() or not video_path.exists():
+        raise FileNotFoundError("Both approved media files must exist.")
 
-    print("Successfully delivered Nūr assets to Telegram.")
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+
+    qa = metadata.get("qa", {})
+    if qa.get("status") != "passed":
+        raise RuntimeError("Automated QA has not passed.")
+
+    image_caption = (
+        f"Nūr — EDITORIAL\n\n{metadata['image_caption']}"
+    )
+    video_caption = (
+        f"Nūr — CINEMATIC FILM\n\n{metadata['video_caption']}"
+    )
+
+    send_file(
+        "sendPhoto",
+        "photo",
+        image_path,
+        image_caption,
+    )
+
+    send_file(
+        "sendVideo",
+        "video",
+        video_path,
+        video_caption,
+    )
+
+    print("Approved Nūr assets delivered to Telegram.")
 
 
 if __name__ == "__main__":
