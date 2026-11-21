@@ -16,7 +16,7 @@ from pathlib import Path
 import edge_tts
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments
+from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
 from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
 
 
@@ -599,7 +599,7 @@ def make_video_segment(
         "-i", str(frame_path),
         "-i", str(audio_path),
         "-vf", video_filter,
-        "-af", "apad",
+        "-af", f"apad,{voice_audio_filter(duration)}",
         "-t", str(duration),
         "-r", str(FPS),
         "-c:v", "libx264",
