@@ -10,7 +10,8 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 WIDTH = 1080
 HEIGHT = 1920
-FOREST = (6, 78, 59)
+FOREST = (11, 93, 59)  # Nūr primary emerald #0B5D3B
+DEEP_FOREST = (6, 78, 59)  # secondary depth colour
 IVORY = (245, 240, 225)
 GOLD = (212, 175, 55)
 CHARCOAL = (18, 24, 21)
@@ -68,7 +69,7 @@ def render_scene_overlay(scene, destination, scene_index=0, visual_style="cinema
         if alpha:
             draw.line((0, y, WIDTH, y), fill=(4, 16, 12, alpha), width=1)
     draw.text((76, 82), "Nūr", font=_font(43, serif=True, bold=True), fill=IVORY + (255,))
-    draw.line((78, 151, 1002, 151), fill=GOLD + (225,), width=2)
+    draw.line((78, 151, 1002, 151), fill=FOREST + (245,), width=4)
     beat = str(scene.get("beat", f"SCENE {scene_index + 1}")).upper()
     draw.text((80, 177), beat[:48], font=_font(20, bold=True), fill=GOLD + (255,))
     caption = str(scene.get("on_screen_text", "")).strip()
@@ -78,7 +79,7 @@ def render_scene_overlay(scene, destination, scene_index=0, visual_style="cinema
         points = [(64, 1410), (1010, 1420), (1000, 1785), (955, 1792), (875, 1784),
                   (760, 1793), (640, 1784), (510, 1792), (390, 1785), (260, 1793), (130, 1784), (70, 1791)]
         draw.polygon(points, fill=paper)
-        draw.line((100, 1435, 270, 1432, 300, 1437), fill=GOLD + (255,), width=7)
+        draw.line((100, 1435, 270, 1432, 300, 1437), fill=FOREST + (255,), width=7)
         caption_color = CHARCOAL + (255,)
         caption_width = 850
     else:
@@ -94,7 +95,7 @@ def render_scene_overlay(scene, destination, scene_index=0, visual_style="cinema
     if len(lines) > 3:
         raise ValueError("Scene caption exceeds the visual-quality limit of three lines.")
     y = 1480
-    draw.rounded_rectangle((80, 1435, 178, 1442), radius=3, fill=GOLD + (255,))
+    draw.rounded_rectangle((80, 1435, 178, 1442), radius=3, fill=FOREST + (255,))
     for line in lines:
         draw.text((95 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 80, y), line, font=caption_font, fill=caption_color,
                   stroke_width=0 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 1,
@@ -102,7 +103,7 @@ def render_scene_overlay(scene, destination, scene_index=0, visual_style="cinema
         y += int(size * 1.22)
     for index in range(4):
         left = 80 + index * 235
-        fill = GOLD + (255,) if index <= int(scene_index) else (245, 240, 225, 115)
+        fill = FOREST + (255,) if index <= int(scene_index) else (245, 240, 225, 115)
         draw.rounded_rectangle((left, 1830, left + 205, 1835), radius=3, fill=fill)
     overlay.save(destination, format="PNG", optimize=True)
     return Path(destination)
@@ -133,7 +134,7 @@ def render_scene_frame(photo_path, scene, destination, scene_index=0, visual_sty
 
     # Consistent masthead across every scene.
     draw.text((76, 82), "Nūr", font=_font(43, serif=True, bold=True), fill=IVORY + (255,))
-    draw.line((78, 151, 1002, 151), fill=GOLD + (225,), width=2)
+    draw.line((78, 151, 1002, 151), fill=FOREST + (245,), width=4)
     beat = str(scene.get("beat", f"SCENE {scene_index + 1}")).upper()
     draw.text((80, 177), beat[:48], font=_font(20, bold=True), fill=GOLD + (255,))
 
@@ -143,7 +144,7 @@ def render_scene_frame(photo_path, scene, destination, scene_index=0, visual_sty
         points = [(64, 1410), (1010, 1420), (1000, 1785), (955, 1792), (875, 1784),
                   (760, 1793), (640, 1784), (510, 1792), (390, 1785), (260, 1793), (130, 1784), (70, 1791)]
         draw.polygon(points, fill=(245, 240, 225, paper_alpha))
-        draw.line((100, 1435, 270, 1432, 300, 1437), fill=GOLD, width=7)
+        draw.line((100, 1435, 270, 1432, 300, 1437), fill=FOREST, width=7)
         caption_color = CHARCOAL
         caption_width = 850
     else:
@@ -161,7 +162,7 @@ def render_scene_frame(photo_path, scene, destination, scene_index=0, visual_sty
 
     # Editorial lower-third: open space, a gold rule and a stable left edge.
     rule_y = 1435
-    draw.rounded_rectangle((80, rule_y, 178, rule_y + 7), radius=3, fill=GOLD + (255,))
+    draw.rounded_rectangle((80, rule_y, 178, rule_y + 7), radius=3, fill=FOREST + (255,))
     line_height = int(size * 1.22)
     y = 1480
     for line in lines:
@@ -174,7 +175,7 @@ def render_scene_frame(photo_path, scene, destination, scene_index=0, visual_sty
     mark_y = 1830
     for index in range(4):
         left = 80 + index * 235
-        fill = GOLD + (255,) if index <= int(scene_index) else (245, 240, 225, 115)
+        fill = FOREST + (255,) if index <= int(scene_index) else (245, 240, 225, 115)
         draw.rounded_rectangle((left, mark_y, left + 205, mark_y + 5),
                                radius=3, fill=fill)
     frame.convert("RGB").save(destination, format="JPEG", quality=95, optimize=True)
@@ -288,7 +289,7 @@ def render_editorial_poster(plan, destination, photo_path):
         y += line_height
 
     y += 16
-    draw.rounded_rectangle((78, y, 190, y + 6), radius=3, fill=GOLD + (255,))
+    draw.rounded_rectangle((78, y, 190, y + 6), radius=3, fill=FOREST + (255,))
     y += 32
 
     body_font = _font(27)
