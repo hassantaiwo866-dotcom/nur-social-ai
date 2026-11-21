@@ -56,7 +56,7 @@ def enhance_photo(path):
     return path
 
 
-def render_scene_overlay(scene, destination, scene_index=0):
+def render_scene_overlay(scene, destination, scene_index=0, visual_style="cinematic_documentary"):
     """Create a transparent Nūr typography layer for genuine moving footage."""
     overlay = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
@@ -72,9 +72,21 @@ def render_scene_overlay(scene, destination, scene_index=0):
     beat = str(scene.get("beat", f"SCENE {scene_index + 1}")).upper()
     draw.text((80, 177), beat[:48], font=_font(20, bold=True), fill=GOLD + (255,))
     caption = str(scene.get("on_screen_text", "")).strip()
+    if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage"):
+        paper = (245, 240, 225, 238) if visual_style == "tactile_editorial_collage" else (245, 240, 225, 215)
+        # Editorial paper strip with a deliberately imperfect cut edge.
+        points = [(64, 1410), (1010, 1420), (1000, 1785), (955, 1792), (875, 1784),
+                  (760, 1793), (640, 1784), (510, 1792), (390, 1785), (260, 1793), (130, 1784), (70, 1791)]
+        draw.polygon(points, fill=paper)
+        draw.line((100, 1435, 270, 1432, 300, 1437), fill=GOLD + (255,), width=7)
+        caption_color = CHARCOAL + (255,)
+        caption_width = 850
+    else:
+        caption_color = IVORY + (255,)
+        caption_width = 900
     size = 62
     caption_font = _font(size, serif=True)
-    lines = _wrap(caption, caption_font, draw, 900)
+    lines = _wrap(caption, caption_font, draw, caption_width)
     while len(lines) > 3 and size > 42:
         size -= 4
         caption_font = _font(size, serif=True)
@@ -84,8 +96,9 @@ def render_scene_overlay(scene, destination, scene_index=0):
     y = 1480
     draw.rounded_rectangle((80, 1435, 178, 1442), radius=3, fill=GOLD + (255,))
     for line in lines:
-        draw.text((80, y), line, font=caption_font, fill=IVORY + (255,),
-                  stroke_width=1, stroke_fill=(0, 0, 0, 90))
+        draw.text((95 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 80, y), line, font=caption_font, fill=caption_color,
+                  stroke_width=0 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 1,
+                  stroke_fill=(0, 0, 0, 90))
         y += int(size * 1.22)
     for index in range(4):
         left = 80 + index * 235
@@ -95,7 +108,7 @@ def render_scene_overlay(scene, destination, scene_index=0):
     return Path(destination)
 
 
-def render_scene_frame(photo_path, scene, destination, scene_index=0):
+def render_scene_frame(photo_path, scene, destination, scene_index=0, visual_style="cinematic_documentary"):
     """Render a coherent premium vertical frame with readable, restrained type."""
     with Image.open(photo_path) as opened:
         frame = ImageOps.fit(
@@ -125,9 +138,20 @@ def render_scene_frame(photo_path, scene, destination, scene_index=0):
     draw.text((80, 177), beat[:48], font=_font(20, bold=True), fill=GOLD + (255,))
 
     caption = str(scene.get("on_screen_text", "")).strip()
+    if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage"):
+        paper_alpha = 238 if visual_style == "tactile_editorial_collage" else 218
+        points = [(64, 1410), (1010, 1420), (1000, 1785), (955, 1792), (875, 1784),
+                  (760, 1793), (640, 1784), (510, 1792), (390, 1785), (260, 1793), (130, 1784), (70, 1791)]
+        draw.polygon(points, fill=(245, 240, 225, paper_alpha))
+        draw.line((100, 1435, 270, 1432, 300, 1437), fill=GOLD, width=7)
+        caption_color = CHARCOAL
+        caption_width = 850
+    else:
+        caption_color = IVORY
+        caption_width = 900
     size = 62
     caption_font = _font(size, serif=True)
-    lines = _wrap(caption, caption_font, draw, 900)
+    lines = _wrap(caption, caption_font, draw, caption_width)
     while len(lines) > 3 and size > 42:
         size -= 4
         caption_font = _font(size, serif=True)
@@ -141,8 +165,9 @@ def render_scene_frame(photo_path, scene, destination, scene_index=0):
     line_height = int(size * 1.22)
     y = 1480
     for line in lines:
-        draw.text((80, y), line, font=caption_font, fill=IVORY + (255,),
-                  stroke_width=1, stroke_fill=(0, 0, 0, 90))
+        draw.text((95 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 80, y), line, font=caption_font, fill=caption_color,
+                  stroke_width=1 if visual_style == "cinematic_documentary" else 0,
+                  stroke_fill=(0, 0, 0, 90))
         y += line_height
 
     # Four quiet progress marks; no decorative boxed caption.
