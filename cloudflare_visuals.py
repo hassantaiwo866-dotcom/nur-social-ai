@@ -51,7 +51,7 @@ def generate_image(prompt: str, destination: str | Path, *, session=requests, ma
     )
     response.raise_for_status()
     content_type = response.headers.get("Content-Type", "") if hasattr(response, "headers") else ""
-    if content_type.startswith("image/"):
+    if isinstance(content_type, str) and content_type.startswith("image/"):
         image_bytes = response.content
     else:
         payload = response.json()
