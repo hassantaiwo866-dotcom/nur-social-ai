@@ -168,3 +168,84 @@ def join_video_segments(segments, destination, transition=0.35):
     if result.returncode:
         raise RuntimeError(f"FFmpeg transition assembly failed: {result.stderr[-2500:]}")
     return Path(destination)
+
+
+def render_editorial_poster(plan, destination, photo_path):
+    """Build a photo-led 4:5 poster with a disciplined editorial hierarchy."""
+    graphic = plan["graphic"]
+    canvas = Image.new("RGB", (1080, 1350), (245, 240, 225))
+    photo_box = (64, 64, 1016, 690)
+    with Image.open(photo_path) as opened:
+        photo = ImageOps.fit(
+            opened.convert("RGB"),
+            (photo_box[2] - photo_box[0], photo_box[3] - photo_box[1]),
+            method=Image.Resampling.LANCZOS,
+            centering=(0.5, 0.42),
+        ).convert("RGBA")
+
+    # Softly rounded hero image, not a small rectangular inset.
+    mask = Image.new("L", photo.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, photo.width - 1, photo.height - 1), radius=24, fill=255
+    )
+    canvas.paste(photo.convert("RGB"), photo_box[:2], mask)
+    draw = ImageDraw.Draw(canvas, "RGBA")
+
+    # Restrained top scrim ensures the wordmark and category remain legible.
+    scrim = Image.new("RGBA", photo.size, (0, 0, 0, 0))
+    scrim_draw = ImageDraw.Draw(scrim)
+    for y in range(210):
+        alpha = int(158 * (1 - y / 210))
+        scrim_draw.line((0, y, photo.width, y), fill=(4, 18, 13, alpha))
+    canvas.paste(Image.alpha_composite(photo, scrim).convert("RGB"), photo_box[:2], mask)
+
+    draw.text((92, 94), "Nūr", font=_font(48, serif=True, bold=True), fill=IVORY + (255,))
+    category = str(plan.get("pillar_label", "INTENTIONAL LIVING")).upper()
+    category_font = _font(17, bold=True)
+    category_width = draw.textbbox((0, 0), category, font=category_font)[2]
+    draw.text((980 - category_width, 119), category, font=category_font, fill=GOLD + (255,))
+
+    # Headline block: consistent left alignment and deliberate line spacing.
+    headline = str(graphic.get("headline", "")).strip()
+    size = 64
+    headline_font = _font(size, serif=True, bold=True)
+    lines = _wrap(headline, headline_font, draw, 920)
+    while len(lines) > 3 and size > 46:
+        size -= 4
+        headline_font = _font(size, serif=True, bold=True)
+        lines = _wrap(headline, headline_font, draw, 920)
+    if len(lines) > 3:
+        raise ValueError("Poster headline exceeds three lines; regenerate the editorial plan.")
+
+    y = 748
+    line_height = int(size * 1.12)
+    for line in lines:
+        draw.text((76, y), line, font=headline_font, fill=CHARCOAL + (255,))
+        y += line_height
+
+    y += 16
+    draw.rounded_rectangle((78, y, 190, y + 6), radius=3, fill=GOLD + (255,))
+    y += 32
+
+    body_font = _font(27)
+    body_lines = _wrap(str(graphic.get("subtext", "")), body_font, draw, 920)
+    if len(body_lines) > 3:
+        body_font = _font(24)
+        body_lines = _wrap(str(graphic.get("subtext", "")), body_font, draw, 920)
+    if len(body_lines) > 3:
+        raise ValueError("Poster subtext exceeds three lines; regenerate the editorial plan.")
+    for line in body_lines:
+        draw.text((78, y), line, font=body_font, fill=(75, 78, 72, 255))
+        y += 39
+
+    draw.line((78, 1214, 1002, 1214), fill=(166, 138, 100, 210), width=1)
+    draw.text((78, 1240), "Build the person you want to become.",
+              font=_font(20, serif=True), fill=(75, 78, 72, 255))
+    edition = "NŪR  /  EDITORIAL"
+    edition_font = _font(15, bold=True)
+    edition_width = draw.textbbox((0, 0), edition, font=edition_font)[2]
+    draw.text((1002 - edition_width, 1244), edition,
+              font=edition_font, fill=(140, 107, 31, 255))
+
+    canvas.save(destination, format="PNG", optimize=True)
+    return Path(destination)
