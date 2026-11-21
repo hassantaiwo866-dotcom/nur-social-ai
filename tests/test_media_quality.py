@@ -101,6 +101,15 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("y=1435", filter_b)
         self.assertNotEqual(filter_a, filter_b)
 
+    def test_motion_accent_filter_uses_emerald_and_alternates(self):
+        from nur_generator import motion_accent_filter
+        a = motion_accent_filter(0, "cinematic_documentary")
+        b = motion_accent_filter(1, "tactile_editorial_collage")
+        self.assertIn("0B5D3B", a)
+        self.assertIn("y=151", a)
+        self.assertIn("y=1435", b)
+        self.assertNotEqual(a, b)
+
     def test_voice_audio_filter_has_polish_and_fades(self):
         from media_quality import voice_audio_filter
         filters = voice_audio_filter(5.0)
