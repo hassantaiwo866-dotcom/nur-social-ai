@@ -92,6 +92,15 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("loudnorm=I=-16:TP=-1.5:LRA=11", filter_graph)
         self.assertIn("offset=3.650", filter_graph)
 
+    def test_voice_audio_filter_has_polish_and_fades(self):
+        from media_quality import voice_audio_filter
+        filters = voice_audio_filter(5.0)
+        self.assertIn("highpass=f=75", filters)
+        self.assertIn("acompressor=", filters)
+        self.assertIn("loudnorm=I=-16", filters)
+        self.assertIn("afade=t=in", filters)
+        self.assertIn("afade=t=out:st=4.840", filters)
+
     @patch("media_quality.subprocess.run")
     def test_stock_clip_vertical_reframe_preserves_full_shot(self, run):
         from media_quality import render_scene_overlay
