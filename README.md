@@ -5,7 +5,7 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 ## Pipeline
 - Editorial plan: Gemini → Groq → built-in local fallback.
 - Models are discovered from each configured account's live model catalogue. `GEMINI_MODEL` and `GROQ_MODEL` are preferences used only when listed by that account.
-- Visuals: Wikimedia Commons with licence screening and recorded attribution; a built-in original editorial illustration is the no-key fallback.
+- Visuals: optional Gemini-generated imagery, optional Pixabay stock photos/video, Wikimedia Commons with licence screening, and locally rendered motion graphics. Provider adapters are documented in `docs/VISUAL_PROVIDER_SYSTEM.md`.
 - Production: photo-led editorial poster, graded source photography, consistent vertical scene design, Edge TTS voiceover and FFmpeg crossfade assembly.
 - Human review remains mandatory. Telegram publishing retains its explicit `NUR_APPROVED=yes` gate and passing-QA requirement.
 
@@ -30,4 +30,4 @@ Generated media is written to `output/`. Actions uploads it as an artifact and, 
 ## Image rights and review
 Commons metadata can be incomplete or unreliable. The pipeline accepts only identified CC0, public-domain, CC BY or CC BY-SA licences with a licence URL and skips declared restrictions. Attribution is recorded, but humans must inspect the original file page and conditions. If Commons cannot provide a suitable image, the pipeline creates original Nūr-branded artwork locally; it is explicitly labelled as an illustration, not a photograph.
 
-See [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md), [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md) and [private Telegram review setup](docs/TELEGRAM_PRIVATE_REVIEW.md).
+See [visual provider system](docs/VISUAL_PROVIDER_SYSTEM.md), [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md), [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md) and [private Telegram review setup](docs/TELEGRAM_PRIVATE_REVIEW.md).
