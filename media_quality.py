@@ -242,7 +242,8 @@ def join_video_segments(segments, destination, transition=0.35, transitions=None
     audio_filter = (
         f"{audio_inputs}concat=n={len(segments)}:v=0:a=1[voice];"
         f"[voice]atrim=duration={final_duration:.3f},asetpts=PTS-STARTPTS,"
-        "loudnorm=I=-16:TP=-1.5:LRA=11[audio]"\n    )
+        "loudnorm=I=-16:TP=-1.5:LRA=11[audio]"
+    )
     filters.append(audio_filter)
     command.extend([
         "-filter_complex", ";".join(filters),
