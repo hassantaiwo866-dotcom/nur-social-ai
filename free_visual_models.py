@@ -48,7 +48,7 @@ def _assert_free_video(model: str) -> None:
     if not free_only_enabled():
         raise RuntimeError("Free-only policy disabled; this adapter is not a paid-provider adapter.")
     if model != VIDEO_MODEL:
-        raise RuntimeError("Paid or unknown video model blocked by free-only policy.")
+        raise RuntimeError("Paid or unknown video model blocked by free-only policy; model is not allowlisted.")
     if os.getenv("AGNES_FREE_VIDEO_CONFIRMED", "").strip().lower() != "yes":
         raise RuntimeError(
             "Video API blocked: confirm the model is currently $0 in your Agnes account, "
