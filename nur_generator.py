@@ -18,7 +18,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
 from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
-from free_visual_models import generate_image as generate_agnes_image, generate_video as generate_agnes_video
+from cloudflare_visuals import generate_image as generate_cloudflare_image
 
 
 ROOT = Path(__file__).resolve().parent
@@ -304,9 +304,23 @@ def _generate_local_illustration(prompt, width, height, destination):
 
 
 def generate_photo(prompt,width,height,destination):
-    """Use optional free image generation, then licensed stock, Commons or original illustration."""
+    """Use Cloudflare free-plan image generation, then existing licensed fallbacks."""
     destination = Path(destination)
-    # Paid Gemini image generation is blocked in the default free-only mode.
+    if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
+        try:
+            print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
+            path = generate_cloudflare_image(prompt, destination)
+            ASSET_ATTRIBUTIONS.append({
+                "provider": "Cloudflare Workers AI",
+                "model": "@cf/black-forest-labs/flux-1-schnell",
+                "asset_id": path.name, "creator": "AI-generated", "source_page": None,
+                "license": "FLUX.1 Schnell; review applicable model licence",
+                "license_url": "https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/",
+                "media_type": "ai_generated_image", "review_required": True,
+            })
+            return enhance_photo(path)
+        except Exception as exc:
+            print(f"Cloudflare image generation unavailable; using existing fallbacks: {type(exc).__name__}: {str(exc)[:240]}")
     if (os.getenv("NUR_FREE_ONLY", "true").strip().lower() in ("0", "false", "no")
             and os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes")):
         try:
@@ -315,19 +329,6 @@ def generate_photo(prompt,width,height,destination):
             return enhance_photo(path)
         except Exception as exc:
             print(f"Gemini image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
-    if os.getenv("ENABLE_AGNES_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
-        try:
-            print("Generating an image with allowlisted Agnes Image 2.5 Flash...")
-            path = generate_agnes_image(prompt, destination)
-            ASSET_ATTRIBUTIONS.append({
-                "provider": "Agnes AI", "model": "agnes-image-2.5-flash",
-                "asset_id": path.name, "creator": "AI-generated", "source_page": None,
-                "license": "Provider terms; review required", "license_url": "https://agnes-ai.com/",
-                "media_type": "ai_generated_image", "review_required": True,
-            })
-            return enhance_photo(path)
-        except Exception as exc:
-            print(f"Agnes image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
     if os.getenv("PIXABAY_API_KEY", "").strip():
         try:
             print("Searching Pixabay for a licensed editorial photograph...")
@@ -336,7 +337,7 @@ def generate_photo(prompt,width,height,destination):
         except Exception as exc:
             print(f"Pixabay photo search unavailable: {type(exc).__name__}: {str(exc)[:240]}")
     import re
-    query=" ".join(re.findall(r"[A-Za-z0-9']+",str(prompt)))[:180]
+    query = " ".join(re.findall(r"[A-Za-z0-9 ]+", str(prompt)))[:180]
     try:
         path = _search_commons(query,width,height,destination)
     except Exception as exc:
@@ -875,8 +876,6 @@ async def run_pipeline():
         print("4. Producing cinematic scenes...")
 
         segments = []
-        agnes_video_used = False
-
         for index, scene in enumerate(
             plan["video"]["scenes"]
         ):
@@ -893,21 +892,6 @@ async def run_pipeline():
                     )
                 except Exception as exc:
                     print(f"Stock video unavailable for scene {index + 1}: {type(exc).__name__}: {str(exc)[:220]}")
-
-            if (clip is None and not agnes_video_used
-                    and os.getenv("ENABLE_AGNES_VIDEO_GENERATION", "").strip().lower() in ("1", "true", "yes")):
-                try:
-                    print("Trying one free-confirmed Agnes Video 2.5 Flash clip for this batch day...")
-                    clip = generate_agnes_video(scene["image_prompt"], temp / f"agnes_scene_{index}.mp4", seconds=4)
-                    agnes_video_used = True
-                    ASSET_ATTRIBUTIONS.append({
-                        "provider": "Agnes AI", "model": "agnes-video-2.5-flash",
-                        "asset_id": clip.name, "creator": "AI-generated", "source_page": None,
-                        "license": "Provider terms; review required", "license_url": "https://agnes-ai.com/",
-                        "media_type": "ai_generated_video", "review_required": True,
-                    })
-                except Exception as exc:
-                    print(f"Agnes video unavailable: {type(exc).__name__}: {str(exc)[:220]}")
 
             photo = None
             frame = None
