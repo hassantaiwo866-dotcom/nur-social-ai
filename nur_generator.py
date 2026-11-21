@@ -539,8 +539,16 @@ def probe_duration(path):
     return float(output)
 
 
+def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary"):
+    """Return a short travelling Nūr emerald accent line for the scene."""
+    y = 1435 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 151
+    x = "t*560-190" if int(scene_index) % 2 == 0 else "W-190-t*560"
+    return f"drawbox=x='{x}':y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
+
+
 def make_video_segment_from_clip(
-    clip_path, overlay_path, audio_path, output_path, duration
+    clip_path, overlay_path, audio_path, output_path, duration,
+    scene_index=0, visual_style="cinematic_documentary",
 ):
     """Render a real portrait stock clip under a transparent Nūr scene overlay."""
     run_command([
@@ -552,8 +560,10 @@ def make_video_segment_from_clip(
         "crop=1080:1920,boxblur=24:10,eq=brightness=-0.18:saturation=0.78[background];"
         "[foreground_source]scale=1080:1920:force_original_aspect_ratio=decrease[foreground];"
         "[background][foreground]overlay=(W-w)/2:(H-h)/2[composed];"
-        "[composed][1:v]overlay=0:0:format=auto,format=yuv420p[video]",
-        "-map", "[video]", "-map", "2:a",
+        "[composed][1:v]overlay=0:0:format=auto,"
+        + motion_accent_filter(scene_index, visual_style)
+        + ",format=yuv420p[motion]",
+        "-map", "[motion]", "-map", "2:a",
         "-af", f"apad,{voice_audio_filter(duration)}", "-t", str(duration), "-r", str(FPS),
         "-c:v", "libx264", "-preset", "medium", "-crf", "19",
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
@@ -590,8 +600,9 @@ def make_video_segment(
             "d=1:s=1080x1920:fps=24,"
             "format=yuv420p"
         )
+        video_filter += "," + motion_accent_filter(scene_index)
     else:
-        video_filter = "scale=1080:1920,format=yuv420p"
+        video_filter = "scale=1080:1920," + motion_accent_filter(scene_index) + ",format=yuv420p"
 
     run_command([
         "ffmpeg", "-y",
@@ -901,7 +912,9 @@ async def run_pipeline():
 
             if clip is not None:
                 make_video_segment_from_clip(
-                    clip, overlay, audio, segment, duration
+                    clip, overlay, audio, segment, duration,
+                    scene_index=index,
+                    visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
                 )
             else:
                 make_video_segment(
