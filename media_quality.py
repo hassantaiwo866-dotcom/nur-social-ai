@@ -191,7 +191,7 @@ def _duration(path):
     return float(result.stdout.strip())
 
 
-def join_video_segments(segments, destination, transition=0.35):
+def join_video_segments(segments, destination, transition=0.35, transitions=None):
     """Join voice-led scenes with short video/audio crossfades and fast-start MP4."""
     segments = [Path(item) for item in segments]
     if len(segments) < 2:
