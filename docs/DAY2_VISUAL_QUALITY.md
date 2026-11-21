@@ -71,3 +71,10 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 
 
 ## Day 6 — scene-specific transitions and emerald branding\n\n- Video assembly accepts a transition per scene boundary, with an explicit allowlist of FFmpeg xfade transitions. Unsupported values safely fall back to fade.\n- The story plan's transition metadata is passed to the final assembly rather than ignored. The closing card uses a restrained fade.\n- Nūr primary emerald `#0B5D3B` remains the signature graphic colour; source footage is not recoloured to green.\n- The transition system currently supports fades, wipes, slides, smooth slides and circle-open. Avoid overusing flashy transitions; the editorial default remains a fade.\n
+
+## Day 7 — voice-led audio polish
+
+- Narration segments receive a restrained voice chain: high-pass rumble removal, low-pass harshness control, compression, loudness normalization and short fades at the segment edges.
+- Scene narration is concatenated sequentially, not crossfaded over the next speaker line. Video transitions remain independent.
+- The final audio is trimmed to the crossfaded video duration and normalized to a social-video target. No synthetic ambient tone or paid music source is introduced.
+- This is technical audio processing, not a substitute for listening to every generated voice track. Check clipping, pronunciation, pacing and naturalness during Telegram review.
