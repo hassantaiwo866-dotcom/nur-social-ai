@@ -4,6 +4,7 @@ import json
 import math
 import os
 import random
+from story_format import validate_story_plan, scene_defaults_for_beat
 import shutil
 import struct
 import subprocess
@@ -343,7 +344,10 @@ def generate_editorial_plan(brand, history):
         "Never shame people, induce guilt, use fear-based marketing, invent statistics, "
         "fabricate religious quotations, or claim unverified app features exist. "
         "Use British English. Be calm, intelligent, precise and human. "
-        "Return valid JSON only, without Markdown fences."
+        "Short video storytelling must use Hook → Open Loop → Development → Mid-video Re-hook → Payoff. "
+        "The four scenes must respectively establish curiosity, develop the idea, renew interest, "
+        "and resolve with a practical compassionate payoff. Never use shame, guilt, fear, "
+        "exaggerated claims or manipulative cliffhangers. Return valid JSON only, without Markdown fences."
     )
     user_prompt = f"""
 Create one original Nūr social-media content package.
@@ -353,9 +357,11 @@ Avoid these recent topics: {recent}
 Return a JSON object with topic_slug, pillar_label, graphic, caption_image, video and caption_video.
 graphic must contain theme, headline, subtext and photo_prompt.
 video must contain a title and exactly four scenes.
-Each scene must contain beat, voiceover, on_screen_text and image_prompt.
-Make the four visual scenes noticeably different, realistic and cinematic.
-Avoid generic gradients, empty green backgrounds and abstract shapes.
+Each scene must contain beat, voiceover, on_screen_text, image_prompt, camera_direction, movement, visual_asset_type, transition and sound_effect.
+Use Hook/Open Loop in scene 1, Development in scene 2, Re-hook in scene 3, and Payoff in scene 4.
+Add video.visual_style selected from cinematic_documentary, tactile_editorial_collage, or hybrid_documentary_collage.
+Default to calm premium cinematic documentary with restrained tactile accents. Scene prompts must describe actual footage/image content, not graphics.
+Make the four visual scenes noticeably different, realistic and cinematic. Avoid generic gradients, empty green backgrounds and abstract shapes.
 """
 
     def validate_plan(plan):
@@ -370,6 +376,9 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
         for key in ("theme", "headline", "subtext", "photo_prompt"):
             if not plan["graphic"].get(key):
                 raise ValueError(f"Graphic is missing {key}.")
+        plan["video"].setdefault("visual_style", "cinematic_documentary")
+        if plan["video"]["visual_style"] not in ("cinematic_documentary", "tactile_editorial_collage", "hybrid_documentary_collage"):
+            plan["video"]["visual_style"] = "cinematic_documentary"
         scenes = plan["video"].get("scenes", [])
         if not isinstance(scenes, list) or len(scenes) != 4:
             raise ValueError("Exactly four video scenes are required.")
@@ -379,6 +388,8 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
             for key in ("beat", "voiceover", "on_screen_text", "image_prompt"):
                 if not scene.get(key):
                     raise ValueError(f"Scene is missing {key}.")
+            for field, value in scene_defaults_for_beat(scene).items():
+                scene.setdefault(field, value)
         visual_prompts = {
             " ".join(str(scene["image_prompt"]).lower().split())
             for scene in scenes
@@ -392,6 +403,7 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
         plan["caption_video"] = enforce_wordmark(plan["caption_video"])
         plan["graphic"]["headline"] = enforce_wordmark(plan["graphic"]["headline"])
         plan["graphic"]["subtext"] = enforce_wordmark(plan["graphic"]["subtext"])
+        validate_story_plan(plan)
         return plan
 
     def fallback_plan():
@@ -408,10 +420,10 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
             "video": {
                 "title": "One Small Choice Can Help You Reset",
                 "scenes": [
-                    {"beat": "01 - THE HOOK", "voiceover": "Sometimes the hardest part is believing you can begin again.", "on_screen_text": "You can begin again.", "image_prompt": "A person sitting quietly beside a window at dawn, reflective mood, natural light, realistic home."},
-                    {"beat": "02 - THE PROBLEM", "voiceover": "When a moment does not go as planned, it can be tempting to give up on the rest of the day.", "on_screen_text": "One moment is not the whole day.", "image_prompt": "A person closing a laptop and stepping away from a desk, evening indoor lighting, thoughtful realistic scene."},
-                    {"beat": "03 - THE REALISATION", "voiceover": "Progress is not a perfect record. It is the practice of noticing and choosing again.", "on_screen_text": "Progress is a practice.", "image_prompt": "A person writing a short reflection in a paper notebook at a wooden table, warm lamp light, realistic surroundings."},
-                    {"beat": "04 - THE RESPONSE", "voiceover": "Take a breath, identify what you need, and choose one small action that supports the person you want to become.", "on_screen_text": "Choose one helpful next step.", "image_prompt": "A person walking along a peaceful tree-lined path in soft morning light, hopeful natural atmosphere."},
+                    {"beat": "HOOK / OPEN LOOP", "voiceover": "A difficult moment does not mean you have to lose the whole day.", "on_screen_text": "The day isn't over.", "image_prompt": "A person pausing beside a window after a stressful moment, intimate natural light, realistic documentary footage.", "camera_direction": "Close medium shot, eye level.", "movement": "Slow push in.", "visual_asset_type": "stock_footage", "transition": "soft_cut", "sound_effect": "quiet room tone"},
+                    {"beat": "DEVELOPMENT", "voiceover": "It is easy to turn one setback into a reason to stop trying.", "on_screen_text": "One moment can become a pattern.", "image_prompt": "A person closing a notebook, then calmly reopening it at a desk, grounded realistic setting.", "camera_direction": "Hands and desk detail.", "movement": "Gentle lateral drift.", "visual_asset_type": "stock_footage", "transition": "paper_reveal", "sound_effect": "soft paper movement"},
+                    {"beat": "RE-HOOK", "voiceover": "But progress is not a perfect record. It is the practice of choosing again.", "on_screen_text": "What if you simply returned?", "image_prompt": "Close view of a hand writing one short line in a notebook, warm light, cinematic realism.", "camera_direction": "Macro detail shot.", "movement": "Subtle tilt down.", "visual_asset_type": "stock_footage", "transition": "soft_cut", "sound_effect": "pencil on paper"},
+                    {"beat": "PAYOFF", "voiceover": "Pause, identify what you need, and choose one small action that supports the person you want to become.", "on_screen_text": "Choose one helpful next step.", "image_prompt": "A person walking calmly along a tree-lined path in soft morning light, hopeful but not staged.", "camera_direction": "Wide follow shot.", "movement": "Slow forward tracking.", "visual_asset_type": "stock_footage", "transition": "fade", "sound_effect": "soft outdoor ambience"},
                 ],
             },
             "caption_video": "You do not need to solve everything at once. Pause, understand what you need, and take one constructive step.\n\n#SelfControl #Recovery #PersonalGrowth #Nūr",
