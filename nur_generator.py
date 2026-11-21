@@ -356,6 +356,12 @@ Avoid generic gradients, empty green backgrounds and abstract shapes.
             for key in ("beat", "voiceover", "on_screen_text", "image_prompt"):
                 if not scene.get(key):
                     raise ValueError(f"Scene is missing {key}.")
+        visual_prompts = {
+            " ".join(str(scene["image_prompt"]).lower().split())
+            for scene in scenes
+        }
+        if len(visual_prompts) != 4:
+            raise ValueError("Each video scene must have a distinct visual prompt.")
         for key in ("topic_slug", "pillar_label", "caption_image", "caption_video"):
             if not isinstance(plan[key], str) or not plan[key].strip():
                 raise ValueError(f"{key} must be non-empty text.")
@@ -663,7 +669,8 @@ def build_scene_frame(photo_path, scene, destination, scene_index=0):
             draw,
             panel_width - 76,
         )
-    lines = lines[:3]
+    if len(lines) > 3:
+        raise ValueError("Scene caption is too long to fit legibly; regenerate the editorial plan.")
 
     line_height = 62 if caption_font.size >= 37 else 48
     panel_height = max(210, 88 + len(lines) * line_height)
@@ -905,6 +912,14 @@ def run_qa(image_path, video_path, plan):
     if "NŪR" in all_text or "N□R" in all_text:
         failures.append("Incorrect brand spelling found.")
 
+    scenes = plan.get("video", {}).get("scenes", [])
+    visual_prompts = {
+        " ".join(str(scene.get("image_prompt", "")).lower().split())
+        for scene in scenes
+    }
+    if len(scenes) != 4 or len(visual_prompts) != 4:
+        failures.append("Video scenes must contain four distinct visual prompts.")
+
     harmful_terms = [
         "pathetic",
         "loser",
@@ -934,6 +949,7 @@ def run_qa(image_path, video_path, plan):
             "Editorial image dimensions",
             "Video file and duration",
             "Generated text brand spelling",
+            "Four distinct scene visual prompts",
             "Basic non-shaming language check",
         ],
         "manual_review_required": True,
