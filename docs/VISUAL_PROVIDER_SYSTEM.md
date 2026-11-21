@@ -26,18 +26,17 @@ Gemini image generation has no free tier in the current published Gemini Develop
 The provider adapters are implemented and unit-tested independently. The next integration step is to connect provider selection to the editorial poster and scene renderer, then inspect actual outputs on a phone. Adapter tests do not establish that the user's API credentials, account billing, stock search results or production assets are working.
 
 
-## Free visual model integration (initial)
+## Cloudflare Workers AI — free-plan image generation
 
-- `free_visual_models.py` adds Agnes Image 2.5 Flash and Agnes Video 2.5 Flash adapters. Image generation is 1K portrait and requires `AGNES_FREE_IMAGE_CONFIRMED=yes` after checking the current account price. Video is 720P, 4–12 seconds, async with bounded polling and requires `AGNES_FREE_VIDEO_CONFIRMED=yes` after checking the current promotional price.
-- Free-only allowlisting blocks other model IDs. Video requires `AGNES_FREE_VIDEO_CONFIRMED=yes` because the $0 offer is promotional and may change; verify it in your account before running. No paid fallback exists.
-- The planned third model (Replicate MiniMax Video-01) is recorded but disabled because free trial access is not guaranteed. It is not called.
-- These adapters are not yet wired into production scene/poster selection; tests use mocked provider responses. Next step: connect opt-in image generation as a fallback and AI video only when stock video misses, with one-video-per-day cap.
+- Agnes adapters and production calls are retired because Agnes access is paid for this project. Replicate/MiniMax remains excluded.
+- The only currently integrated visual AI API is Cloudflare Workers AI FLUX.1 Schnell: `@cf/black-forest-labs/flux-1-schnell`.
+- Cloudflare documents a shared allowance of 10,000 Neurons per day on Workers Free, resetting at 00:00 UTC. Workers Free rejects requests after the allowance is exhausted. Workers Paid can bill usage above the free allocation, so Nūr requires the account to remain on **Workers Free**; do not enable this integration on Workers Paid.
+- The model is priced at 4.80 Neurons per 512x512 tile plus 9.60 Neurons per inference step. Nūr requests four steps and limits generation to five images per Python process. Actual daily output depends on image dimensions and other Workers AI use in the same account.
+- The API is disabled by default. After account verification, configure Actions secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, then repository variables `CLOUDFLARE_FREE_PLAN_CONFIRMED=yes` and `ENABLE_CLOUDFLARE_IMAGE_GENERATION=true`.
+- The adapter validates returned images, enforces the five-image process cap and has no paid fallback. On provider error or quota exhaustion, the generator continues to Pixabay, Wikimedia Commons and original local illustration.
+- Adapter tests use mocked responses only. No live account, API token, quota or generated output has been verified.
 
-
-## Production integration — Agnes free visual models
-
-- `AGNES_API_KEY` is an optional Actions secret. Image model opt-in uses the `ENABLE_AGNES_IMAGE_GENERATION` repository variable and the allowlisted `agnes-image-2.5-flash` model. It is used as an image fallback before Pixabay/Commons/local art.
-- Video model opt-in uses `ENABLE_AGNES_VIDEO_GENERATION` and `AGNES_FREE_VIDEO_CONFIRMED=yes`; only `agnes-video-2.5-flash`, 720P, 4 seconds is allowed. It is attempted only if Pixabay did not return a usable clip and is capped at one generated video per batch day.
-- `NUR_FREE_ONLY=true` is passed in production. Gemini image generation (paid) is blocked under this default; no paid provider fallback is invoked.
-- Video free pricing is promotional. Verify current $0 price in the provider console before enabling; if uncertain, keep it off. Provider adapters use mocked tests only and live API output has not been verified.
-- Replicate MiniMax Video-01 is the planned third model but remains disabled; trial credits are not a guaranteed free service. No integration can charge through this pipeline.
+Official references:
+- Pricing and daily allocation: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- FLUX.1 Schnell model and REST API: https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/
+- API limits and exhausted-quota error: https://developers.cloudflare.com/workers-ai/platform/errors/
