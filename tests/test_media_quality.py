@@ -39,7 +39,9 @@ class MediaQualityTests(unittest.TestCase):
             target = Path(folder) / "overlay.png"
             render_scene_overlay({"beat": "HOOK", "on_screen_text": "Pause before reacting."}, target)
             with Image.open(target) as image:
-                self.assertEqual(image.getpixel((500, 151))[:3], (11, 93, 59))\n\n    def test_scene_frame_rejects_overlong_caption(self):
+                self.assertEqual(image.getpixel((500, 151))[:3], (11, 93, 59))
+
+    def test_scene_frame_rejects_overlong_caption(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder) / "source.jpg"
             target = Path(folder) / "frame.jpg"
