@@ -12,6 +12,8 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 ## GitHub Actions secrets
 - `GEMINI_API_KEY` — optional text provider.
 - `GROQ_API_KEY` — optional fallback text provider.
+- `TELEGRAM_BOT_TOKEN` — optional bot token used only for private review delivery.
+- `TELEGRAM_REVIEW_CHAT_ID` — optional private Telegram chat ID that receives generated previews.
 
 Keep credentials in repository Actions secrets, never source files. At least one text provider key is recommended.
 
@@ -23,7 +25,7 @@ python -m pip install -r requirements.txt
 python nur_generator.py
 ```
 
-Generated media is written to `output/`. Actions uploads it as an artifact for review; generation does not publish automatically.
+Generated media is written to `output/`. Actions uploads it as an artifact and, when both Telegram review secrets are configured, sends the image and video to the configured private review chat. This preview path is separate from public publishing. The existing `telegram_publisher.py` still requires `NUR_APPROVED=yes` and passing QA.
 
 ## Image rights and review
 Commons metadata can be incomplete or unreliable. The pipeline accepts only identified CC0, public-domain, CC BY or CC BY-SA licences with a licence URL and skips declared restrictions. Attribution is recorded, but humans must inspect the original file page and conditions. If Commons cannot provide a suitable image, the pipeline creates original Nūr-branded artwork locally; it is explicitly labelled as an illustration, not a photograph.
