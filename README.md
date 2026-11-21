@@ -30,4 +30,4 @@ Generated media is written to `output/`. Actions uploads it as an artifact and, 
 ## Image rights and review
 Commons metadata can be incomplete or unreliable. The pipeline accepts only identified CC0, public-domain, CC BY or CC BY-SA licences with a licence URL and skips declared restrictions. Attribution is recorded, but humans must inspect the original file page and conditions. If Commons cannot provide a suitable image, the pipeline creates original Nūr-branded artwork locally; it is explicitly labelled as an illustration, not a photograph.
 
-See [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md) and [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md).
+See [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md), [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md) and [private Telegram review setup](docs/TELEGRAM_PRIVATE_REVIEW.md).
