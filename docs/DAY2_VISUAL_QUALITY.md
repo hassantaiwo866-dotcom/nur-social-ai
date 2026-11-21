@@ -18,3 +18,25 @@ Improve the generated social media package without replacing the existing provid
 
 ## Verification status
 The source changes and unit tests are committed to the stabilisation branch. GitHub Actions must pass on the resulting head commit before Day 2 is considered technically verified. The generated output still needs human visual and audio review.
+
+---
+
+# Day 3 — photographic finishing and cinematic assembly
+
+## Objective
+Raise the minimum visual standard of the existing editorial pipeline without introducing a new paid API, weakening licence screening, or making generated illustrations look like photographs.
+
+## Changes
+- All selected source photographs receive restrained finishing: EXIF orientation correction, tonal balancing, modest colour/contrast adjustment and sharpening. No scene details are fabricated.
+- Video scenes use one consistent editorial system: a restrained masthead, clear scene label, open lower-third typography, readable contrast and a four-part progress marker. This replaces the inconsistent caption-panel layouts.
+- Scene joins use short video fades and audio crossfades rather than abrupt concatenation.
+- The synthetic multi-tone ambient drone is removed from the final mix. Voiceover remains the primary audio; this avoids presenting a cheap synthetic tone as a music bed.
+- Original local artwork remains clearly recorded as illustration, not photography. It receives the same finishing pipeline.
+
+## Safeguards
+- Wikimedia Commons licence screening and attribution remain in place.
+- No external image or music API, extra credential, or paid service is introduced.
+- Human visual, factual, rights and audio review remains required. Automated tests cannot certify that an image is beautiful, appropriate or correctly licensed.
+
+## Verification
+Unit tests cover photo processing, vertical frame dimensions and caption overflow. CI must pass on the resulting commit. A fresh generated package must still be inspected on a phone before publication.
