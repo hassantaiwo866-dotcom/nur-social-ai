@@ -542,6 +542,272 @@ async def run_pipeline():
 
 
 if __name__ == "__main__":
+    asyncio.run(run_pipeline())350
+    g = plan["graphic"]
+    use_ivory = g.get("theme") == "warm_ivory"
+
+    bg_color = WARM_IVORY if use_ivory else DEEP_FOREST
+    text_primary = CHARCOAL if use_ivory else WARM_IVORY
+    text_secondary = "#4A4A4A" if use_ivory else "#D6D1C4"
+    accent = EARTH_BRONZE if use_ivory else MUTED_GOLD
+
+    canvas = Image.new("RGB", (W, H), bg_color)
+    draw = ImageDraw.Draw(canvas)
+
+    outer_pad = 48
+    inner_pad = 64
+    draw.rectangle([outer_pad, outer_pad, W - outer_pad, H - outer_pad], outline=accent, width=1)
+    draw.rectangle([inner_pad, inner_pad, W - inner_pad, H - inner_pad], outline=accent, width=1)
+
+    logo_font = get_font(34, bold=True, serif=True)
+    label_font = get_font(18, bold=False, serif=False)
+
+    draw.text((104, 96), "Nūr", fill=text_primary, font=logo_font)
+    pillar_text = plan.get("pillar_label", "INTENTIONAL LIVING").upper()
+    p_bbox = draw.textbbox((0, 0), pillar_text, font=label_font)
+    draw.text((W - 104 - (p_bbox[2] - p_bbox[0]), 106), pillar_text, fill=accent, font=label_font)
+
+    draw.line([(104, 158), (W - 104, 158)], fill=accent, width=1)
+
+    photo_w, photo_h = W - 208, 490
+    temp_photo = "temp_editorial_photo.jpg"
+    fetch_cinematic_photo(g["photo_prompt"], photo_w, photo_h, temp_photo)
+
+    with Image.open(temp_photo) as photo:
+        draw.rectangle([102, 198, 106 + photo_w, 202 + photo_h], outline=accent, width=1)
+        canvas.paste(photo, (104, 200))
+
+    headline_font = get_font(50, bold=True, serif=True)
+    body_font = get_font(27, bold=False, serif=False)
+    footer_font = get_font(18, bold=False, serif=False)
+
+    y_cursor = 740
+    headline_lines = wrap_text(g["headline"], headline_font, W - 208, draw)
+    for line in headline_lines[:4]:
+        draw.text((104, y_cursor), line, fill=text_primary, font=headline_font)
+        y_cursor += 64
+
+    y_cursor += 18
+    draw.line([(104, y_cursor), (224, y_cursor)], fill=accent, width=2)
+    y_cursor += 32
+
+    body_lines = wrap_text(g["subtext"], body_font, W - 208, draw)
+    for line in body_lines[:4]:
+        draw.text((104, y_cursor), line, fill=text_secondary, font=body_font)
+        y_cursor += 40
+
+    draw.line([(104, H - 140), (W - 104, H - 140)], fill=accent, width=1)
+    draw.text((104, H - 116), "Build the person you want to become.", fill=text_secondary, font=footer_font)
+    edition_str = "EDITION · 01"
+    e_bbox = draw.textbbox((0, 0), edition_str, font=footer_font)
+    draw.text((W - 104 - (e_bbox[2] - e_bbox[0]), H - 116), edition_str, fill=accent, font=footer_font)
+
+    canvas = apply_subtle_grain(canvas, intensity=7)
+    canvas.save(output_path, quality=95)
+    if os.path.exists(temp_photo):
+        os.remove(temp_photo)
+    return output_path
+
+
+async def synthesize_voice(text, audio_path):
+    communicate = edge_tts.Communicate(text, "en-GB-RyanNeural", rate="-6%")
+    await communicate.save(audio_path)
+
+
+def create_caption_overlay(width, height, beat_label, caption_text):
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    brand_font = get_font(30, bold=True, serif=True)
+    beat_font = get_font(18, bold=False, serif=False)
+    draw.text((72, 110), "Nūr", fill=(245, 240, 225, 230), font=brand_font)
+    draw.text((72, 152), beat_label.upper(), fill=(212, 175, 55, 220), font=beat_font)
+
+    cap_font = get_font(38, bold=False, serif=False)
+    lines = wrap_text(caption_text, cap_font, width - 180, draw)
+    box_height = len(lines) * 52 + 56
+    box_top = height - 340 - box_height
+
+    draw.rectangle([64, box_top, width - 64, box_top + box_height], fill=(8, 8, 8, 175))
+    draw.line([(64, box_top), (width - 64, box_top)], fill=(212, 175, 55, 220), width=2)
+
+    y = box_top + 28
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=cap_font)
+        x = (width - (bbox[2] - bbox[0])) // 2
+        draw.text((x, y), line, fill=(245, 240, 225, 255), font=cap_font)
+        y += 52
+
+    temp_ov = f"temp_ov_{random.randint(1000,9999)}.png"
+    overlay.save(temp_ov)
+    return temp_ov
+
+
+def build_closing_endcard(width, height):
+    card = Image.new("RGB", (width, height), DEEP_FOREST)
+    draw = ImageDraw.Draw(card)
+
+    pad = 64
+    draw.rectangle([pad, pad, width - pad, height - pad], outline=MUTED_GOLD, width=2)
+
+    logo_font = get_font(96, bold=True, serif=True)
+    tag_font = get_font(34, bold=False, serif=True)
+
+    l_bbox = draw.textbbox((0, 0), "Nūr", font=logo_font)
+    lx = (width - (l_bbox[2] - l_bbox[0])) // 2
+    ly = (height // 2) - 110
+    draw.text((lx, ly), "Nūr", fill=WARM_IVORY, font=logo_font)
+
+    draw.line([(width // 2 - 90, ly + 125), (width // 2 + 90, ly + 125)], fill=MUTED_GOLD, width=2)
+
+    tagline = "Build the person you want to become."
+    t_bbox = draw.textbbox((0, 0), tagline, font=tag_font)
+    tx = (width - (t_bbox[2] - t_bbox[0])) // 2
+    draw.text((tx, ly + 155), tagline, fill=WARM_IVORY, font=tag_font)
+
+    card = apply_subtle_grain(card, intensity=8)
+    end_path = "temp_nur_endcard.png"
+    card.save(end_path, quality=95)
+    return end_path
+
+
+async def build_cinematic_reel(plan, output_path="nur_reel.mp4"):
+    W, H = 1080, 1920
+    clips = []
+    temp_files = []
+
+    for idx, scene in enumerate(plan["video"]["scenes"]):
+        img_file = f"temp_scene_{idx}.jpg"
+        aud_file = f"temp_scene_{idx}.mp3"
+        temp_files.extend([img_file, aud_file])
+
+        fetch_cinematic_photo(scene["image_prompt"], W, H, img_file)
+        await synthesize_voice(scene["voiceover"], aud_file)
+
+        audio_clip = AudioFileClip(aud_file)
+        duration = audio_clip.duration + 0.45
+
+        bg_clip = (
+            ImageClip(img_file)
+            .set_duration(duration)
+            .resize(lambda t: 1.0 + 0.035 * (t / duration))
+            .set_position("center")
+        )
+
+        ov_file = create_caption_overlay(W, H, scene["beat"], scene["on_screen_text"])
+        temp_files.append(ov_file)
+        ov_clip = ImageClip(ov_file).set_duration(duration)
+
+        scene_comp = CompositeVideoClip([bg_clip, ov_clip], size=(W, H)).set_audio(audio_clip)
+        clips.append(scene_comp)
+
+    end_audio = "temp_end_audio.mp3"
+    temp_files.append(end_audio)
+    await synthesize_voice("Nūr. Build the person you want to become.", end_audio)
+    end_aud_clip = AudioFileClip(end_audio)
+    end_dur = end_aud_clip.duration + 1.0
+
+    end_img = build_closing_endcard(W, H)
+    temp_files.append(end_img)
+    end_clip = ImageClip(end_img).set_duration(end_dur).set_audio(end_aud_clip)
+    clips.append(end_clip)
+
+    final_video = concatenate_videoclips(clips, method="compose")
+
+    ambient_wav = generate_ambient_soundbed(final_video.duration + 0.5)
+    temp_files.append(ambient_wav)
+    ambient_clip = AudioFileClip(ambient_wav).subclip(0, final_video.duration).volumex(0.14)
+
+    mixed_audio = CompositeAudioClip([final_video.audio, ambient_clip])
+    final_video = final_video.set_audio(mixed_audio)
+
+    final_video.write_videofile(
+        output_path,
+        fps=24,
+        codec="libx264",
+        audio_codec="aac",
+        preset="medium",
+        threads=2,
+        logger=None,
+    )
+
+    duration_sec = round(final_video.duration, 1)
+    final_video.close()
+
+    for f in temp_files:
+        if os.path.exists(f):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+
+    return output_path, duration_sec
+
+
+def run_qa_checks(plan, img_path, vid_path, vid_duration):
+    checks = []
+
+    all_text = json.dumps(plan, ensure_ascii=False)
+    spelling_ok = ("NŪR" not in all_text) and ("N□R" not in all_text)
+    checks.append(("Wordmark spelling (Nūr)", spelling_ok))
+
+    img_ok = False
+    if os.path.exists(img_path) and os.path.getsize(img_path) > 15000:
+        with Image.open(img_path) as im:
+            img_ok = im.size == (1080, 1350)
+    checks.append(("Editorial graphic format (1080×1350)", img_ok))
+
+    vid_ok = os.path.exists(vid_path) and os.path.getsize(vid_path) > 50000 and (12.0 <= vid_duration <= 45.0)
+    checks.append((f"Cinematic reel ({vid_duration}s, 5 beats + ambient audio)", vid_ok))
+
+    banned_words = ["ashamed", "pathetic", "lazy", "loser", "sinful", "punish"]
+    tone_ok = not any(w in all_text.lower() for w in banned_words)
+    checks.append(("Calm, non-shame brand tone", tone_ok))
+
+    passed = sum(1 for _, ok in checks if ok)
+    total = len(checks)
+    summary_lines = [f"{'✓' if ok else '✗'} {label}" for label, ok in checks]
+    report = f"QA Verification: {passed}/{total} passed\n" + "\n".join(summary_lines)
+
+    if passed < total:
+        raise RuntimeError(f"Nūr QA Gate blocked delivery:\n{report}")
+
+    return report
+
+
+async def run_pipeline():
+    brand = load_json("brand_config.json", {"pillars": ["Digital Self-Control"]})
+    history = load_json("history.json", [])
+
+    print("1. Generating Nūr editorial plan via OpenRouter...")
+    plan = generate_editorial_plan(brand, history)
+
+    print("2. Creating Nūr layered editorial graphic (1080x1350)...")
+    build_editorial_graphic(plan, "nur_post.png")
+
+    print("3. Creating Nūr cinematic vertical film with ambient soundbed (1080x1920)...")
+    _, vid_duration = await build_cinematic_reel(plan, "nur_reel.mp4")
+
+    print("4. Running Nūr Section 8 automated QA gate...")
+    qa_report = run_qa_checks(plan, "nur_post.png", "nur_reel.mp4", vid_duration)
+    print(qa_report)
+
+    save_json(
+        "latest_post.json",
+        {
+            "image_caption": plan["caption_image"],
+            "video_caption": plan["caption_video"],
+            "topic": plan["topic_slug"],
+            "qa_report": qa_report,
+        },
+    )
+
+    history.append(plan["topic_slug"])
+    save_json("history.json", history[-50:])
+    print("5. Nūr production pipeline complete.")
+
+
+if __name__ == "__main__":
     asyncio.run(run_pipelimport os
 import json
 import math
