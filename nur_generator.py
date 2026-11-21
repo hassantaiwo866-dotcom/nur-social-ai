@@ -17,7 +17,7 @@ import edge_tts
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
-from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
+from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video\nfrom free_visual_models import generate_image as generate_agnes_image, generate_video as generate_agnes_video
 
 
 ROOT = Path(__file__).resolve().parent
@@ -305,7 +305,7 @@ def _generate_local_illustration(prompt, width, height, destination):
 def generate_photo(prompt,width,height,destination):
     """Choose an explicitly enabled AI image, stock photo, Commons photo, then illustration."""
     destination = Path(destination)
-    if os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
+    if (os.getenv("NUR_FREE_ONLY", "true").strip().lower() in ("0", "false", "no")\n            and os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes")):
         try:
             print("Generating an original scene image with Gemini...")
             path = generate_gemini_image(
