@@ -17,7 +17,8 @@ import edge_tts
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
-from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video\nfrom free_visual_models import generate_image as generate_agnes_image, generate_video as generate_agnes_video
+from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
+from free_visual_models import generate_image as generate_agnes_image, generate_video as generate_agnes_video
 
 
 ROOT = Path(__file__).resolve().parent
