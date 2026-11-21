@@ -14,24 +14,6 @@ OUTPUT = ROOT / "output"
 TELEGRAM_API = "https://api.telegram.org"
 
 
-def _telegram_upload(token, chat_id, endpoint, field_name, file_path, caption):
-    url = f"{TELEGRAM_API}/bot{token}/{endpoint}"
-    with open(file_path, "rb") as media:
-        response = requests.post(
-            url,
-            data={"chat_id": chat_id, "caption": caption[:1024]},
-            files={field_name: media},
-            timeout=180,
-        )
-    response.raise_for_status()
-    result = response.json()
-    if not result.get("ok"):
-        raise RuntimeError(
-            f"Telegram {endpoint} failed: {result.get('description', 'unknown error')}"
-        )
-    return result
-
-
 def deliver_review(
     token=None,
     chat_id=None,
@@ -73,12 +55,12 @@ def deliver_review(
     image_caption = f"Nūr — PRIVATE MEDIA REVIEW\n\n{metadata.get('image_caption', '')}"
     video_caption = f"Nūr — PRIVATE MEDIA REVIEW\n\n{metadata.get('video_caption', '')}"
 
-    _telegram_upload(
+    _upload(
         token, chat_id, "sendPhoto", "photo", image_path,
         image_caption, request_post,
     )
     try:
-        _telegram_upload(
+        _upload(
             token, chat_id, "sendVideo", "video", video_path,
             video_caption, request_post,
         )
@@ -88,7 +70,7 @@ def deliver_review(
         if "failed" not in str(error).lower():
             raise
         print("Telegram could not preview the MP4; retrying as a document.")
-        _telegram_upload(
+        _upload(
             token, chat_id, "sendDocument", "document", video_path,
             video_caption, request_post,
         )
