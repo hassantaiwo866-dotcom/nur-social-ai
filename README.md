@@ -13,7 +13,7 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 - `GEMINI_API_KEY` — optional text provider.
 - `GROQ_API_KEY` — optional fallback text provider.
 - `TELEGRAM_BOT_TOKEN` — optional bot token used only for private review delivery.
-- `TELEGRAM_REVIEW_CHAT_ID` — optional private Telegram chat ID that receives generated previews.
+- `TELEGRAM_REVIEW_CHAT_ID` — optional dedicated review chat ID; if omitted, the existing `TELEGRAM_CHAT_ID` is reused.
 
 Keep credentials in repository Actions secrets, never source files. At least one text provider key is recommended.
 
