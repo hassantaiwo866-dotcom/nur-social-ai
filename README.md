@@ -5,7 +5,7 @@ Prelaunch editorial media pipeline for Nūr: privacy-first self-control, protect
 ## Pipeline
 - Editorial plan: Gemini → Groq → built-in local fallback.
 - Models are discovered from each configured account's live model catalogue. `GEMINI_MODEL` and `GROQ_MODEL` are preferences used only when listed by that account.
-- Visuals: optional Gemini-generated imagery, optional Pixabay stock photos/video, Wikimedia Commons with licence screening, and locally rendered motion graphics. Real Pixabay portrait footage is preferred for scenes when available; still imagery remains a fallback. Provider adapters are documented in `docs/VISUAL_PROVIDER_SYSTEM.md`.
+- Visuals: optional Cloudflare Workers AI FLUX.1 Schnell imagery on a confirmed Workers Free account, optional Pixabay stock photos/video, Wikimedia Commons with licence screening, and locally rendered motion graphics. Paid Gemini image generation remains disabled in free-only mode. Real Pixabay portrait footage is preferred for scenes when available; still imagery remains a fallback. Provider adapters are documented in `docs/VISUAL_PROVIDER_SYSTEM.md`.
 - Production: photo-led editorial poster, graded source photography, consistent vertical scene design, Edge TTS voiceover and FFmpeg crossfade assembly.
 - Human review remains mandatory. Telegram publishing retains its explicit `NUR_APPROVED=yes` gate and passing-QA requirement.
 
