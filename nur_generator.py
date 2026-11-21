@@ -303,23 +303,34 @@ def _generate_local_illustration(prompt, width, height, destination):
 
 
 def generate_photo(prompt,width,height,destination):
-    """Choose an explicitly enabled AI image, stock photo, Commons photo, then illustration."""
+    """Use optional free image generation, then licensed stock, Commons or original illustration."""
     destination = Path(destination)
-    if (os.getenv("NUR_FREE_ONLY", "true").strip().lower() in ("0", "false", "no")\n            and os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes")):
+    # Paid Gemini image generation is blocked in the default free-only mode.
+    if (os.getenv("NUR_FREE_ONLY", "true").strip().lower() in ("0", "false", "no")
+            and os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes")):
         try:
-            print("Generating an original scene image with Gemini...")
-            path = generate_gemini_image(
-                prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS
-            )
+            print("Generating an original scene image with Gemini (paid mode explicitly enabled)...")
+            path = generate_gemini_image(prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS)
             return enhance_photo(path)
         except Exception as exc:
             print(f"Gemini image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
+    if os.getenv("ENABLE_AGNES_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
+        try:
+            print("Generating an image with allowlisted Agnes Image 2.5 Flash...")
+            path = generate_agnes_image(prompt, destination)
+            ASSET_ATTRIBUTIONS.append({
+                "provider": "Agnes AI", "model": "agnes-image-2.5-flash",
+                "asset_id": path.name, "creator": "AI-generated", "source_page": None,
+                "license": "Provider terms; review required", "license_url": "https://agnes-ai.com/",
+                "media_type": "ai_generated_image", "review_required": True,
+            })
+            return enhance_photo(path)
+        except Exception as exc:
+            print(f"Agnes image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
     if os.getenv("PIXABAY_API_KEY", "").strip():
         try:
             print("Searching Pixabay for a licensed editorial photograph...")
-            path = search_pixabay_photo(
-                prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS
-            )
+            path = search_pixabay_photo(prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS)
             return enhance_photo(path)
         except Exception as exc:
             print(f"Pixabay photo search unavailable: {type(exc).__name__}: {str(exc)[:240]}")
@@ -880,6 +891,21 @@ async def run_pipeline():
                     )
                 except Exception as exc:
                     print(f"Stock video unavailable for scene {index + 1}: {type(exc).__name__}: {str(exc)[:220]}")
+
+            if (clip is None and not agnes_video_used
+                    and os.getenv("ENABLE_AGNES_VIDEO_GENERATION", "").strip().lower() in ("1", "true", "yes")):
+                try:
+                    print("Trying one free-confirmed Agnes Video 2.5 Flash clip for this batch day...")
+                    clip = generate_agnes_video(scene["image_prompt"], temp / f"agnes_scene_{index}.mp4", seconds=4)
+                    agnes_video_used = True
+                    ASSET_ATTRIBUTIONS.append({
+                        "provider": "Agnes AI", "model": "agnes-video-2.5-flash",
+                        "asset_id": clip.name, "creator": "AI-generated", "source_page": None,
+                        "license": "Provider terms; review required", "license_url": "https://agnes-ai.com/",
+                        "media_type": "ai_generated_video", "review_required": True,
+                    })
+                except Exception as exc:
+                    print(f"Agnes video unavailable: {type(exc).__name__}: {str(exc)[:220]}")
 
             photo = None
             frame = None
