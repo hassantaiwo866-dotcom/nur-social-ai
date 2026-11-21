@@ -521,9 +521,9 @@ def scene_caption_layout(scene_index):
     return layouts[int(scene_index) % len(layouts)]
 
 
-def build_scene_frame(photo_path, scene, destination, scene_index=0):
+def build_scene_frame(photo_path, scene, destination, scene_index=0, visual_style="cinematic_documentary"):
     """Render a consistent, high-contrast editorial lower-third over graded photography."""
-    return render_scene_frame(photo_path, scene, destination, scene_index)
+    return render_scene_frame(photo_path, scene, destination, scene_index, visual_style)
 
 
 def probe_duration(path):
@@ -883,12 +883,14 @@ async def run_pipeline():
                     scene,
                     temp / f"frame_{index}.jpg",
                     scene_index=index,
+                    visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
                 )
             else:
                 overlay = render_scene_overlay(
                     scene,
                     temp / f"overlay_{index}.png",
                     scene_index=index,
+                    visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
                 )
 
             audio = temp / f"voice_{index}.mp3"
