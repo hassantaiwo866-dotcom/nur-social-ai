@@ -85,7 +85,8 @@ class MediaQualityTests(unittest.TestCase):
             join_video_segments(paths, output)
         command = run.call_args.args[0]
         filter_graph = command[command.index("-filter_complex") + 1]
-        self.assertEqual(filter_graph.count("xfade="), 2)\n        self.assertIn("transition=fade", filter_graph)
+        self.assertEqual(filter_graph.count("xfade="), 2)
+        self.assertIn("transition=fade", filter_graph)
         self.assertEqual(filter_graph.count("acrossfade="), 2)
         self.assertIn("offset=3.650", filter_graph)
 
