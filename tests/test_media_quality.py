@@ -33,7 +33,13 @@ class MediaQualityTests(unittest.TestCase):
                 self.assertEqual(image.size, (1080, 1920))
                 self.assertEqual(image.format, "JPEG")
 
-    def test_scene_overlay_uses_primary_emerald_brand_rule(self):\n        from media_quality import render_scene_overlay\n        with tempfile.TemporaryDirectory() as folder:\n            target = Path(folder) / "overlay.png"\n            render_scene_overlay({"beat": "HOOK", "on_screen_text": "Pause before reacting."}, target)\n            with Image.open(target) as image:\n                self.assertEqual(image.getpixel((500, 151))[:3], (11, 93, 59))\n\n    def test_scene_frame_rejects_overlong_caption(self):
+    def test_scene_overlay_uses_primary_emerald_brand_rule(self):
+        from media_quality import render_scene_overlay
+        with tempfile.TemporaryDirectory() as folder:
+            target = Path(folder) / "overlay.png"
+            render_scene_overlay({"beat": "HOOK", "on_screen_text": "Pause before reacting."}, target)
+            with Image.open(target) as image:
+                self.assertEqual(image.getpixel((500, 151))[:3], (11, 93, 59))\n\n    def test_scene_frame_rejects_overlong_caption(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder) / "source.jpg"
             target = Path(folder) / "frame.jpg"
