@@ -1,53 +1,52 @@
 import os
+import json
 import requests
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "YOUR_TELEGRAM_CHAT_ID")
-OUTPUT_DIR = "output"
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 
-def send_photo(photo_path: str, caption: str):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
+
+def send_photo(photo_path, caption):
+    url = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/sendPhoto"
     with open(photo_path, "rb") as photo:
         response = requests.post(
             url,
-            data={"chat_id": TELEGRAM_CHAT_ID, "caption": caption[:1024]},
+            data={"chat_id": CHAT_ID, "caption": caption[:1024]},
             files={"photo": photo},
-            timeout=60
+            timeout=60,
         )
     response.raise_for_status()
-    print("Sent NŪR image post to Telegram.")
 
-def send_video(video_path: str, caption: str):
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendVideo"
+
+def send_video(video_path, caption):
+    url = f"[https://api.telegram.org/bot](https://api.telegram.org/bot){TOKEN}/sendVideo"
     with open(video_path, "rb") as video:
         response = requests.post(
             url,
-            data={
-                "chat_id": TELEGRAM_CHAT_ID,
-                "caption": caption[:1024],
-                "supports_streaming": True
-            },
+            data={"chat_id": CHAT_ID, "caption": caption[:1024], "supports_streaming": True},
             files={"video": video},
-            timeout=120
+            timeout=120,
         )
     response.raise_for_status()
-    print("Sent NŪR vertical video to Telegram.")
+
 
 def deliver_to_telegram():
-    img_path = os.path.join(OUTPUT_DIR, "nur_image_post.png")
-    img_cap_path = os.path.join(OUTPUT_DIR, "image_caption.txt")
-    vid_path = os.path.join(OUTPUT_DIR, "nur_video_post.mp4")
-    vid_cap_path = os.path.join(OUTPUT_DIR, "video_caption.txt")
+    if not TOKEN or not CHAT_ID:
+        raise ValueError("Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID")
 
-    if os.path.exists(img_path) and os.path.exists(img_cap_path):
-        with open(img_cap_path, "r", encoding="utf-8") as f:
-            img_caption = f.read().strip()
-        send_photo(img_path, f"NŪR — IMAGE POST\n\n{img_caption}")
+    with open("latest_post.json", "r", encoding="utf-8") as f:
+        meta = json.load(f)
 
-    if os.path.exists(vid_path) and os.path.exists(vid_cap_path):
-        with open(vid_cap_path, "r", encoding="utf-8") as f:
-            vid_caption = f.read().strip()
-        send_video(vid_path, f"NŪR — VERTICAL VIDEO\n\n{vid_caption}")
+    img_path = "nur_post.png"
+    vid_path = "nur_reel.mp4"
+
+    if os.path.exists(img_path):
+        send_photo(img_path, f"Nūr — EDITORIAL GRAPHIC\n\n{meta['image_caption']}")
+    if os.path.exists(vid_path):
+        send_video(vid_path, f"Nūr — CINEMATIC FILM\n\n{meta['video_caption']}")
+
+    print("Successfully delivered Nūr assets to Telegram.")
+
 
 if __name__ == "__main__":
     deliver_to_telegram()
