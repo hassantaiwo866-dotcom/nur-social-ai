@@ -24,3 +24,11 @@ Gemini image generation has no free tier in the current published Gemini Develop
 
 ## Current integration status
 The provider adapters are implemented and unit-tested independently. The next integration step is to connect provider selection to the editorial poster and scene renderer, then inspect actual outputs on a phone. Adapter tests do not establish that the user's API credentials, account billing, stock search results or production assets are working.
+
+
+## Free visual model integration (initial)
+
+- `free_visual_models.py` adds Agnes Image 2.5 Flash and Agnes Video 2.5 Flash adapters. Image generation is 1K portrait. Video is 720P, 4–12 seconds, async with bounded polling.
+- Free-only allowlisting blocks other model IDs. Video requires `AGNES_FREE_VIDEO_CONFIRMED=yes` because the $0 offer is promotional and may change; verify it in your account before running. No paid fallback exists.
+- The planned third model (Replicate MiniMax Video-01) is recorded but disabled because free trial access is not guaranteed. It is not called.
+- These adapters are not yet wired into production scene/poster selection; tests use mocked provider responses. Next step: connect opt-in image generation as a fallback and AI video only when stock video misses, with one-video-per-day cap.
