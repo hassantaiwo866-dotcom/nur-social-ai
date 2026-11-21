@@ -2,7 +2,7 @@ import base64
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, patch
 
 from PIL import Image
 import visual_providers as providers
@@ -68,6 +68,39 @@ class VisualProviderTests(unittest.TestCase):
             self.assertTrue(result.exists())
             self.assertEqual(registry[0]["asset_id"], 12)
             self.assertEqual(registry[0]["license"], "Pixabay Content License")
+
+    @patch("visual_providers.subprocess.run")
+    def test_pixabay_video_accepts_high_resolution_landscape_for_vertical_reframe(self, probe):
+        with tempfile.TemporaryDirectory() as folder:
+            search = Mock()
+            search.raise_for_status.return_value = None
+            search.json.return_value = {"hits": [{
+                "id": 88, "duration": 12, "user": "creator",
+                "pageURL": "https://pixabay.com/videos/id-88/",
+                "tags": "person walking",
+                "videos": {"large": {
+                    "url": "https://cdn.example/clip.mp4",
+                    "width": 1920, "height": 1080,
+                }},
+            }]}
+            download = Mock()
+            download.raise_for_status.return_value = None
+            download.content = b"x" * 150_000
+            session = Mock()
+            session.get.side_effect = [search, download]
+            probe.return_value.stdout = '{"streams":[{"width":1920,"height":1080}]}'
+            probe.return_value.returncode = 0
+            registry = []
+            result = providers.search_pixabay_video(
+                "person walking", Path(folder) / "clip.mp4",
+                api_key="test-key", session=session, registry=registry,
+            )
+            self.assertTrue(result.exists())
+            self.assertEqual(registry[0]["media_type"], "stock_video")
+            params = session.get.call_args_list[0].kwargs["params"]
+            self.assertNotIn("orientation", params)
+            self.assertEqual(params["min_width"], 720)
+            self.assertEqual(params["min_height"], 1280)
 
 
 if __name__ == "__main__":

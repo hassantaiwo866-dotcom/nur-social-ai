@@ -118,9 +118,11 @@ def search_pixabay_photo(query: str, destination: str | Path,
     """Retrieve a high-resolution Pixabay photograph and preserve attribution."""
     payload = _pixabay_request(
         PIXABAY_API,
-        {"q": query[:100], "image_type": "photo", "orientation": "vertical",
-         "min_width": 1280, "min_height": 720, "per_page": 20,
-         "safesearch": "true"},
+        {"q": query[:100], "image_type": "photo",
+         "orientation": "horizontal" if width >= height else "vertical",
+         "min_width": 1280 if width >= height else 720,
+         "min_height": 720 if width >= height else 1280,
+         "per_page": 20, "safesearch": "true"},
         api_key=api_key, session=session,
     )
     hits = payload.get("hits", [])
@@ -158,12 +160,14 @@ def search_pixabay_video(query: str, destination: str | Path, *,
     """Download a portrait stock-video clip and verify it with ffprobe."""
     payload = _pixabay_request(
         PIXABAY_VIDEO_API,
-        {"q": query[:100], "video_type": "film", "orientation": "vertical",
+        {"q": query[:100], "video_type": "film",
          "min_width": min_width, "min_height": min_height,
          "per_page": 20, "safesearch": "true"},
         api_key=api_key, session=session,
     )
     hits = payload.get("hits", [])
+    # Pixabay's video search endpoint does not expose an orientation filter.
+    # Accept high-resolution landscape clips; the renderer reframes them vertically.
     hits.sort(key=lambda item: item.get("duration", 0) > 0, reverse=True)
     path = Path(destination)
     path.parent.mkdir(parents=True, exist_ok=True)
