@@ -939,7 +939,7 @@ async def run_pipeline():
 
         print("6. Joining scenes with restrained crossfades...")
         video_path = OUTPUT / "nur_reel.mp4"
-        join_video_segments(segments, video_path)
+        join_video_segments(segments, video_path, transitions=[scene.get("transition", "fade") for scene in plan["video"]["scenes"]] + ["fade"])
 
         print("8. Running quality checks...")
 
