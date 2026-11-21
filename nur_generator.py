@@ -740,10 +740,23 @@ def make_video_segment(
     scene_index=0,
 ):
     if zoom:
+        total_frames = max(1, int(float(duration) * FPS))
+        if int(scene_index) % 2 == 0:
+            x_start, x_end = 0.18, 0.68
+        else:
+            x_start, x_end = 0.82, 0.32
+        y_start, y_end = (0.30, 0.58) if int(scene_index) < 2 else (0.68, 0.42)
+        x_motion = (
+            f"(iw-iw/zoom)*({x_start}+"
+            f"({x_end}-{x_start})*on/{total_frames})"
+        )
+        y_motion = (
+            f"(ih-ih/zoom)*({y_start}+"
+            f"({y_end}-{y_start})*on/{total_frames})"
+        )
         video_filter = (
-            "zoompan=z='min(1+0.00085*on,1.055)':"
-            "x='(iw-iw/zoom)*0.5':"
-            "y='(ih-ih/zoom)*0.5':"
+            "zoompan=z='min(1+0.00065*on,1.045)':"
+            f"x='{x_motion}':y='{y_motion}':"
             "d=1:s=1080x1920:fps=24,"
             "format=yuv420p"
         )
