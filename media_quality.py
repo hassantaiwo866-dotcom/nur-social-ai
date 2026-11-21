@@ -191,8 +191,21 @@ def _duration(path):
     return float(result.stdout.strip())
 
 
+def voice_audio_filter(duration):
+    """Polish spoken narration without adding artificial music or masking speech."""
+    duration = max(0.25, float(duration))
+    fade_out_start = max(0.08, duration - 0.16)
+    return (
+        "highpass=f=75,lowpass=f=12500,"
+        "acompressor=threshold=-18dB:ratio=2.5:attack=15:release=120:makeup=2,"
+        "loudnorm=I=-16:TP=-1.5:LRA=11,"
+        "afade=t=in:st=0:d=0.06,"
+        f"afade=t=out:st={fade_out_start:.3f}:d=0.15"
+    )
+
+
 def join_video_segments(segments, destination, transition=0.35, transitions=None):
-    """Join voice-led scenes with short video/audio crossfades and fast-start MP4."""
+    """Join scenes with video transitions while keeping spoken narration sequential."""
     segments = [Path(item) for item in segments]
     if len(segments) < 2:
         raise ValueError("At least two video segments are required.")
@@ -208,11 +221,9 @@ def join_video_segments(segments, destination, transition=0.35, transitions=None
     transitions = list(transitions or [])
     allowed_transitions = {"fade", "wipeleft", "wiperight", "slideleft", "slideright", "smoothleft", "smoothright", "circleopen", "soft_cut"}
     video_label = "[0:v]"
-    audio_label = "[0:a]"
     elapsed = durations[0]
     for index in range(1, len(segments)):
         next_video = f"[v{index}]"
-        next_audio = f"[a{index}]"
         offset = elapsed - transition
         transition_name = transitions[index - 1] if index - 1 < len(transitions) else "fade"
         if transition_name == "soft_cut":
@@ -223,15 +234,19 @@ def join_video_segments(segments, destination, transition=0.35, transitions=None
             f"{video_label}[{index}:v]xfade=transition={transition_name}:duration={transition}:"
             f"offset={offset:.3f}{next_video}"
         )
-        filters.append(
-            f"{audio_label}[{index}:a]acrossfade=d={transition}:c1=tri:c2=tri{next_audio}"
-        )
-        video_label, audio_label = next_video, next_audio
+        video_label = next_video
         elapsed += durations[index] - transition
 
+    final_duration = sum(durations) - transition * (len(segments) - 1)
+    audio_inputs = "".join(f"[{index}:a]" for index in range(len(segments)))
+    audio_filter = (
+        f"{audio_inputs}concat=n={len(segments)}:v=0:a=1[voice];"
+        f"[voice]atrim=duration={final_duration:.3f},asetpts=PTS-STARTPTS,"
+        "loudnorm=I=-16:TP=-1.5:LRA=11[audio]"\n    )
+    filters.append(audio_filter)
     command.extend([
         "-filter_complex", ";".join(filters),
-        "-map", video_label, "-map", audio_label,
+        "-map", video_label, "-map", "[audio]",
         "-c:v", "libx264", "-preset", "medium", "-crf", "19",
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
         "-movflags", "+faststart", str(destination),
