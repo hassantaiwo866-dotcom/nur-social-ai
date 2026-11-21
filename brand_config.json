@@ -3,7 +3,7 @@
   "tagline": "Build the person you want to become.",
   "language": "British English",
   "palette": {
-    "deep_forest": "#064E3B",
+    "deep_forest": "#064E3B",\n    "primary_emerald": "#0B5D3B",
     "living_green": "#0B5D3B",
     "near_black": "#080808",
     "warm_ivory": "#F5F0E1",
@@ -28,5 +28,5 @@
     "Respect privacy and user-controlled growth.",
     "Do not portray setbacks as personal failure."
   ],
-  "visual_style": "Premium editorial photography and cinematic human-centred scenes. Use deep forest green, warm ivory, charcoal and restrained muted gold. Prefer realistic environments, detailed subjects, natural lighting, strong composition and generous negative space. Do not use generic green-screen backgrounds, neon colours, clutter, embedded text or watermarks."
+  "visual_style": "Premium editorial photography and cinematic human-centred scenes. Primary brand colour is emerald green #0B5D3B across all media; use deep forest green #064E3B for depth, warm ivory, charcoal and restrained muted gold. Prefer realistic environments, detailed subjects, natural lighting, strong composition and generous negative space. Do not use generic green-screen backgrounds, neon colours, clutter, embedded text or watermarks."
 }
