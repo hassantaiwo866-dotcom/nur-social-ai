@@ -28,7 +28,7 @@ The provider adapters are implemented and unit-tested independently. The next in
 
 ## Free visual model integration (initial)
 
-- `free_visual_models.py` adds Agnes Image 2.5 Flash and Agnes Video 2.5 Flash adapters. Image generation is 1K portrait. Video is 720P, 4–12 seconds, async with bounded polling.
+- `free_visual_models.py` adds Agnes Image 2.5 Flash and Agnes Video 2.5 Flash adapters. Image generation is 1K portrait and requires `AGNES_FREE_IMAGE_CONFIRMED=yes` after checking the current account price. Video is 720P, 4–12 seconds, async with bounded polling and requires `AGNES_FREE_VIDEO_CONFIRMED=yes` after checking the current promotional price.
 - Free-only allowlisting blocks other model IDs. Video requires `AGNES_FREE_VIDEO_CONFIRMED=yes` because the $0 offer is promotional and may change; verify it in your account before running. No paid fallback exists.
 - The planned third model (Replicate MiniMax Video-01) is recorded but disabled because free trial access is not guaranteed. It is not called.
 - These adapters are not yet wired into production scene/poster selection; tests use mocked provider responses. Next step: connect opt-in image generation as a fallback and AI video only when stock video misses, with one-video-per-day cap.
