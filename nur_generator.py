@@ -15,6 +15,7 @@ from pathlib import Path
 import edge_tts
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from media_quality import enhance_photo, render_scene_frame, join_video_segments
 
 
 ROOT = Path(__file__).resolve().parent
@@ -301,11 +302,12 @@ def generate_photo(prompt,width,height,destination):
     import re
     query=" ".join(re.findall(r"[A-Za-z0-9']+",str(prompt)))[:180]
     try:
-        return _search_commons(query,width,height,destination)
+        path = _search_commons(query,width,height,destination)
     except Exception as exc:
         print(f"Wikimedia Commons unavailable: {type(exc).__name__}: {str(exc)[:240]}")
-        print("Using built-in Nūr illustration fallback; this is not a photograph.")
-        return _generate_local_illustration(prompt,width,height,destination)
+        print("Using original Nūr editorial illustration fallback; this is not a photograph.")
+        path = _generate_local_illustration(prompt,width,height,destination)
+    return enhance_photo(path)
 
 
 def generate_editorial_plan(brand, history):
@@ -621,102 +623,8 @@ def scene_caption_layout(scene_index):
 
 
 def build_scene_frame(photo_path, scene, destination, scene_index=0):
-    with Image.open(photo_path) as image:
-        frame = ImageOps.fit(
-            image.convert("RGB"),
-            (WIDTH, HEIGHT),
-            method=Image.Resampling.LANCZOS,
-        )
-
-    draw = ImageDraw.Draw(frame, "RGBA")
-    draw.text(
-        (76, 100),
-        WORDMARK,
-        fill=(245, 240, 225, 245),
-        font=font(38, serif=True, bold=True),
-    )
-    draw.text(
-        (78, 151),
-        scene["beat"].upper(),
-        fill=(212, 175, 55, 245),
-        font=font(19),
-    )
-
-    layout = scene_caption_layout(scene_index)
-    panel_left, panel_right = layout["left"], layout["right"]
-    panel_width = panel_right - panel_left
-    caption_font = font(43, serif=True)
-    lines = wrap_text(
-        scene["on_screen_text"],
-        caption_font,
-        draw,
-        panel_width - 76,
-    )
-
-    if len(lines) > 3:
-        caption_font = font(37, serif=True)
-        lines = wrap_text(
-            scene["on_screen_text"],
-            caption_font,
-            draw,
-            panel_width - 76,
-        )
-    if len(lines) > 3:
-        caption_font = font(32, serif=True)
-        lines = wrap_text(
-            scene["on_screen_text"],
-            caption_font,
-            draw,
-            panel_width - 76,
-        )
-    if len(lines) > 3:
-        raise ValueError("Scene caption is too long to fit legibly; regenerate the editorial plan.")
-
-    line_height = 62 if caption_font.size >= 37 else 48
-    panel_height = max(210, 88 + len(lines) * line_height)
-    panel_bottom = 1790
-    panel_top = panel_bottom - panel_height
-
-    draw.rounded_rectangle(
-        (panel_left, panel_top, panel_right, panel_bottom),
-        radius=22,
-        fill=(8, 8, 8, 205),
-        outline=(212, 175, 55, 210),
-        width=2,
-    )
-
-    y = panel_top + (panel_height - len(lines) * line_height) // 2
-    for line in lines:
-        bounds = draw.textbbox((0, 0), line, font=caption_font)
-        text_width = bounds[2] - bounds[0]
-        if layout["align"] == "center":
-            x = panel_left + (panel_width - text_width) // 2
-        else:
-            x = panel_left + 34
-        draw.text(
-            (x, y),
-            line,
-            fill=(245, 240, 225, 255),
-            font=caption_font,
-        )
-        y += line_height
-
-    # A restrained scene-progress marker gives the sequence a clear rhythm.
-    progress_y = 1840
-    draw.rounded_rectangle(
-        (78, progress_y, WIDTH - 78, progress_y + 5),
-        radius=3,
-        fill=(245, 240, 225, 105),
-    )
-    progress_right = 78 + int((WIDTH - 156) * ((int(scene_index) + 1) / 4))
-    draw.rounded_rectangle(
-        (78, progress_y, progress_right, progress_y + 5),
-        radius=3,
-        fill=(212, 175, 55, 245),
-    )
-
-    frame.save(destination, format="JPEG", quality=94)
-    return destination
+    """Render a consistent, high-contrast editorial lower-third over graded photography."""
+    return render_scene_frame(photo_path, scene, destination, scene_index)
 
 
 def probe_duration(path):
@@ -1090,63 +998,9 @@ async def run_pipeline():
 
         segments.append(end_segment)
 
-        print("6. Combining cinematic scenes...")
-
-        concat_list = temp / "segments.txt"
-
-        concat_list.write_text(
-            "".join(
-                f"file '{segment.as_posix()}'\n"
-                for segment in segments
-            ),
-            encoding="utf-8",
-        )
-
-        raw_video = temp / "combined.mp4"
-
-        run_command([
-            "ffmpeg", "-y",
-            "-f", "concat",
-            "-safe", "0",
-            "-i", str(concat_list),
-            "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "19",
-            "-pix_fmt", "yuv420p",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            str(raw_video),
-        ])
-
-        duration = probe_duration(raw_video)
-
-        print("7. Adding ambient sound...")
-
-        ambient = temp / "ambient.wav"
-
-        make_ambient_sound(
-            duration,
-            ambient,
-        )
-
+        print("6. Joining scenes with restrained crossfades...")
         video_path = OUTPUT / "nur_reel.mp4"
-
-        run_command([
-            "ffmpeg", "-y",
-            "-i", str(raw_video),
-            "-i", str(ambient),
-            "-filter_complex",
-            "[1:a]volume=0.12[bg];"
-            "[0:a][bg]amix=inputs=2:duration=first:"
-            "dropout_transition=2[a]",
-            "-map", "0:v:0",
-            "-map", "[a]",
-            "-c:v", "copy",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-shortest",
-            str(video_path),
-        ])
+        join_video_segments(segments, video_path)
 
         print("8. Running quality checks...")
 
