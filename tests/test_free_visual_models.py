@@ -19,7 +19,8 @@ class FreeVisualModelTests(unittest.TestCase):
             response.json.return_value = {"data": [{"b64_json": base64.b64encode(buffer.getvalue()).decode()}]}
             session = Mock()
             session.post.return_value = response
-            with patch.dict("os.environ", {"AGNES_API_KEY": "test", "AGNES_FREE_IMAGE_CONFIRMED": "yes"}):\n                result = models.generate_image("emerald editorial", Path(folder) / "image.png", session=session)
+            with patch.dict("os.environ", {"AGNES_API_KEY": "test", "AGNES_FREE_IMAGE_CONFIRMED": "yes"}):
+                result = models.generate_image("emerald editorial", Path(folder) / "image.png", session=session)
             self.assertTrue(result.exists())
             self.assertEqual(session.post.call_args.kwargs["json"]["model"], models.IMAGE_MODEL)
 
@@ -29,8 +30,9 @@ class FreeVisualModelTests(unittest.TestCase):
                 models.generate_image("scene", "x.png")
 
     def test_unknown_image_model_blocked(self):
-        with self.assertRaisesRegex(RuntimeError, "allowlisted"):
-            models.generate_image("x", "x.png", model="paid-model")
+        with patch.dict("os.environ", {"AGNES_API_KEY": "test", "AGNES_FREE_IMAGE_CONFIRMED": "yes"}):
+            with self.assertRaisesRegex(RuntimeError, "allowlisted"):
+                models.generate_image("x", "x.png", model="paid-model")
 
     def test_video_requires_explicit_free_confirmation(self):
         with patch.dict("os.environ", {"AGNES_API_KEY": "test", "AGNES_FREE_VIDEO_CONFIRMED": ""}):
