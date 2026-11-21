@@ -241,7 +241,7 @@ def render_editorial_poster(plan, destination, photo_path):
     draw.line((78, 1214, 1002, 1214), fill=(166, 138, 100, 210), width=1)
     draw.text((78, 1240), "Build the person you want to become.",
               font=_font(20, serif=True), fill=(75, 78, 72, 255))
-    edition = "NŪR  /  EDITORIAL"
+    edition = "Nūr  /  EDITORIAL"
     edition_font = _font(15, bold=True)
     edition_width = draw.textbbox((0, 0), edition, font=edition_font)[2]
     draw.text((1002 - edition_width, 1244), edition,
