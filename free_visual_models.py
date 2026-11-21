@@ -36,6 +36,8 @@ def _key() -> str:
 
 
 def _assert_free_image(model: str) -> None:
+    if os.getenv("AGNES_FREE_IMAGE_CONFIRMED", "").strip().lower() != "yes":
+        raise RuntimeError("Image API blocked: confirm the model is currently $0 in your Agnes account, then set AGNES_FREE_IMAGE_CONFIRMED=yes.")
     if not free_only_enabled():
         raise RuntimeError("Free-only policy disabled; this adapter is not a paid-provider adapter.")
     if model != IMAGE_MODEL:
