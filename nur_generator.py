@@ -1,3 +1,4 @@
+
 import asyncio
 import json
 import math
@@ -197,170 +198,145 @@ def generate_photo(prompt, width, height, destination):
 
 
 def generate_editorial_plan(brand, history):
-    api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
-
-    if not api_key:
-        raise RuntimeError("Missing OPENROUTER_API_KEY secret.")
-
-    pillars = brand.get(
-        "pillars",
-        ["Digital Self-Control"],
-    )
-
-    pillar = random.choice(pillars)
+    """Gemini primary, Groq backup, then a local editorial fallback."""
+    pillar = random.choice(brand.get("pillars") or ["Digital Self-Control"])
     category = random.choice(VIDEO_CATEGORIES)
     recent = ", ".join(history[-15:]) if history else "None"
-
-    system_prompt = """
-You are the editorial director for Nūr.
-
-Always spell the brand exactly as Nūr.
-Never write NŪR or NUR as the brand name.
-
-Nūr supports self-control, protection, recovery
-and personal growth.
-
-Its philosophy is privacy-first, non-judgemental
-and user-controlled.
-
-Never shame people or induce guilt.
-Never use fear-based marketing.
-Never invent statistics.
-Never fabricate religious quotations.
-Never claim unverified app features exist.
-
-Use British English.
-Be calm, intelligent, precise and human.
-Return valid JSON only.
-Do not use Markdown fences.
-"""
-
+    system_prompt = (
+        "You are the editorial director for Nūr. Always spell the brand exactly as Nūr. "
+        "Nūr supports self-control, protection, recovery and personal growth. "
+        "Its philosophy is privacy-first, non-judgemental and user-controlled. "
+        "Never shame people, induce guilt, use fear-based marketing, invent statistics, "
+        "fabricate religious quotations, or claim unverified app features exist. "
+        "Use British English. Be calm, intelligent, precise and human. "
+        "Return valid JSON only, without Markdown fences."
+    )
     user_prompt = f"""
 Create one original Nūr social-media content package.
-
 Pillar: {pillar}
 Category: {category}
 Avoid these recent topics: {recent}
-
-Return this exact JSON structure:
-
-{{
-  "topic_slug": "short-unique-topic-id",
-  "pillar_label": "SHORT EDITORIAL LABEL",
-  "graphic": {{
-    "theme": "dark_forest",
-    "headline": "A thoughtful statement of 6 to 11 words.",
-    "subtext": "A grounded reflection of 16 to 24 words.",
-    "photo_prompt": "Describe a detailed realistic photographic scene."
-  }},
-  "caption_image": "Three short paragraphs and four understated hashtags.",
-  "video": {{
-    "title": "Internal video title",
-    "scenes": [
-      {{
-        "beat": "01 - THE HOOK",
-        "voiceover": "An immediate relatable opening line.",
-        "on_screen_text": "Short caption",
-        "image_prompt": "Detailed realistic cinematic scene."
-      }},
-      {{
-        "beat": "02 - THE PROBLEM",
-        "voiceover": "Explain a consequence without shaming anyone.",
-        "on_screen_text": "Short caption",
-        "image_prompt": "A distinct detailed cinematic scene."
-      }},
-      {{
-        "beat": "03 - THE REALISATION",
-        "voiceover": "Offer a grounded behavioural insight.",
-        "on_screen_text": "Short caption",
-        "image_prompt": "A distinct detailed cinematic scene."
-      }},
-      {{
-        "beat": "04 - THE RESPONSE",
-        "voiceover": "Give one practical and calm action.",
-        "on_screen_text": "Short caption",
-        "image_prompt": "A distinct detailed cinematic scene."
-      }}
-    ]
-  }},
-  "caption_video": "A calm reflective caption and four hashtags."
-}}
-
-Make the four visual scenes noticeably different.
+Return a JSON object with topic_slug, pillar_label, graphic, caption_image, video and caption_video.
+graphic must contain theme, headline, subtext and photo_prompt.
+video must contain a title and exactly four scenes.
+Each scene must contain beat, voiceover, on_screen_text and image_prompt.
+Make the four visual scenes noticeably different, realistic and cinematic.
 Avoid generic gradients, empty green backgrounds and abstract shapes.
-Use believable locations, objects, lighting and human activity.
 """
 
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": (
-                "https://github.com/"
-                "hassantaiwo866-dotcom/nur-social-ai"
-            ),
-            "X-Title": "Nur Editorial Pipeline",
-        },
-        json={
-            "model": "google/gemini-2.5-flash",
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            "temperature": 0.7,
-        },
-        timeout=90,
-    )
+    def validate_plan(plan):
+        if not isinstance(plan, dict):
+            raise ValueError("Editorial response must be a JSON object.")
+        required = ("topic_slug", "pillar_label", "graphic", "caption_image", "video", "caption_video")
+        for key in required:
+            if key not in plan:
+                raise ValueError(f"Missing editorial field: {key}")
+        if not isinstance(plan["graphic"], dict) or not isinstance(plan["video"], dict):
+            raise ValueError("Graphic and video must be JSON objects.")
+        for key in ("theme", "headline", "subtext", "photo_prompt"):
+            if not plan["graphic"].get(key):
+                raise ValueError(f"Graphic is missing {key}.")
+        scenes = plan["video"].get("scenes", [])
+        if not isinstance(scenes, list) or len(scenes) != 4:
+            raise ValueError("Exactly four video scenes are required.")
+        for scene in scenes:
+            if not isinstance(scene, dict):
+                raise ValueError("Each scene must be an object.")
+            for key in ("beat", "voiceover", "on_screen_text", "image_prompt"):
+                if not scene.get(key):
+                    raise ValueError(f"Scene is missing {key}.")
+        for key in ("topic_slug", "pillar_label", "caption_image", "caption_video"):
+            if not isinstance(plan[key], str) or not plan[key].strip():
+                raise ValueError(f"{key} must be non-empty text.")
+        plan["caption_image"] = enforce_wordmark(plan["caption_image"])
+        plan["caption_video"] = enforce_wordmark(plan["caption_video"])
+        plan["graphic"]["headline"] = enforce_wordmark(plan["graphic"]["headline"])
+        plan["graphic"]["subtext"] = enforce_wordmark(plan["graphic"]["subtext"])
+        return plan
 
-    response.raise_for_status()
+    def fallback_plan():
+        return {
+            "topic_slug": f"small-steps-{random.randint(1000, 9999)}",
+            "pillar_label": "SMALL, INTENTIONAL STEPS",
+            "graphic": {
+                "theme": "dark_forest",
+                "headline": "You can begin again with one small choice",
+                "subtext": "A difficult moment does not erase your progress. Pause, notice what you need, and choose one helpful next step.",
+                "photo_prompt": "A quiet, warmly lit room at dawn, notebook and glass of water on a wooden desk, natural window light, realistic editorial photography.",
+            },
+            "caption_image": "Progress is not built by getting everything right.\n\nIt grows through small decisions, honest reflection, and the willingness to return to what matters after a difficult moment.\n\nChoose one helpful next step today.\n\n#SelfControl #PersonalGrowth #SmallSteps #Nūr",
+            "video": {
+                "title": "One Small Choice Can Help You Reset",
+                "scenes": [
+                    {"beat": "01 - THE HOOK", "voiceover": "Sometimes the hardest part is believing you can begin again.", "on_screen_text": "You can begin again.", "image_prompt": "A person sitting quietly beside a window at dawn, reflective mood, natural light, realistic home."},
+                    {"beat": "02 - THE PROBLEM", "voiceover": "When a moment does not go as planned, it can be tempting to give up on the rest of the day.", "on_screen_text": "One moment is not the whole day.", "image_prompt": "A person closing a laptop and stepping away from a desk, evening indoor lighting, thoughtful realistic scene."},
+                    {"beat": "03 - THE REALISATION", "voiceover": "Progress is not a perfect record. It is the practice of noticing and choosing again.", "on_screen_text": "Progress is a practice.", "image_prompt": "A person writing a short reflection in a paper notebook at a wooden table, warm lamp light, realistic surroundings."},
+                    {"beat": "04 - THE RESPONSE", "voiceover": "Take a breath, identify what you need, and choose one small action that supports the person you want to become.", "on_screen_text": "Choose one helpful next step.", "image_prompt": "A person walking along a peaceful tree-lined path in soft morning light, hopeful natural atmosphere."},
+                ],
+            },
+            "caption_video": "You do not need to solve everything at once. Pause, understand what you need, and take one constructive step.\n\n#SelfControl #Recovery #PersonalGrowth #Nūr",
+        }
 
-    raw = response.json()["choices"][0]["message"]["content"].strip()
+    gemini_key = os.environ.get("GEMINI_API_KEY", "").strip()
+    groq_key = os.environ.get("GROQ_API_KEY", "").strip()
+    providers = []
+    if gemini_key:
+        providers.append("gemini")
+    if groq_key:
+        providers.append("groq")
 
-    if raw.startswith("```"):
-        raw = raw.split("\n", 1)[-1]
-        raw = raw.rsplit("```", 1)[0]
+    for provider in providers:
+        try:
+            print(f"Generating editorial plan with {provider.title()}...")
+            if provider == "gemini":
+                model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+                response = requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                    headers={"x-goog-api-key": gemini_key, "Content-Type": "application/json"},
+                    json={
+                        "systemInstruction": {"parts": [{"text": system_prompt}]},
+                        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+                        "generationConfig": {"temperature": 0.7, "responseMimeType": "application/json"},
+                    },
+                    timeout=90,
+                )
+                response.raise_for_status()
+                raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+            else:
+                model = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+                response = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+                    json={
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "temperature": 0.7,
+                        "response_format": {"type": "json_object"},
+                    },
+                    timeout=90,
+                )
+                response.raise_for_status()
+                raw = response.json()["choices"][0]["message"]["content"]
+            raw = str(raw or "").strip()
+            if raw.startswith("```"):
+                raw = raw.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            first, last = raw.find("{"), raw.rfind("}")
+            if first < 0 or last <= first:
+                raise ValueError("Provider did not return a JSON object.")
+            plan = validate_plan(json.loads(raw[first:last + 1]))
+            print(f"Editorial plan generated successfully with {provider.title()}.")
+            return plan
+        except Exception as error:
+            print(f"{provider.title()} failed: {type(error).__name__}: {error}")
 
-    plan = json.loads(raw.strip())
-
-    required = [
-        "topic_slug",
-        "pillar_label",
-        "graphic",
-        "caption_image",
-        "video",
-        "caption_video",
-    ]
-
-    for key in required:
-        if key not in plan:
-            raise ValueError(f"Missing editorial field: {key}")
-
-    scenes = plan["video"].get("scenes", [])
-
-    if len(scenes) != 4:
-        raise ValueError("Exactly four video scenes are required.")
-
-    for scene in scenes:
-        for key in (
-            "beat",
-            "voiceover",
-            "on_screen_text",
-            "image_prompt",
-        ):
-            if not scene.get(key):
-                raise ValueError(f"Scene is missing {key}.")
-
-    plan["caption_image"] = enforce_wordmark(plan["caption_image"])
-    plan["caption_video"] = enforce_wordmark(plan["caption_video"])
-    plan["graphic"]["headline"] = enforce_wordmark(
-        plan["graphic"]["headline"]
-    )
-    plan["graphic"]["subtext"] = enforce_wordmark(
-        plan["graphic"]["subtext"]
-    )
-
-    return plan
+    if providers:
+        print("All AI providers failed. Using the built-in editorial fallback.")
+    else:
+        print("No Gemini or Groq key supplied. Using the built-in editorial fallback.")
+    return validate_plan(fallback_plan())
 
 
 def build_editorial_graphic(plan, destination, photo_path):
