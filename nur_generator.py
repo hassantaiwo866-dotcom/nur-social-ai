@@ -554,7 +554,7 @@ def make_video_segment_from_clip(
         "[background][foreground]overlay=(W-w)/2:(H-h)/2[composed];"
         "[composed][1:v]overlay=0:0:format=auto,format=yuv420p[video]",
         "-map", "[video]", "-map", "2:a",
-        "-af", "apad", "-t", str(duration), "-r", str(FPS),
+        "-af", f"apad,{voice_audio_filter(duration)}", "-t", str(duration), "-r", str(FPS),
         "-c:v", "libx264", "-preset", "medium", "-crf", "19",
         "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k",
         "-shortest", "-movflags", "+faststart", str(output_path),
