@@ -46,7 +46,7 @@ jobs:
           for day in 1 2 3; do
             echo "Producing Nūr batch day ${day}/3"
             NUR_BATCH_DAY="$day" python nur_generator.py
-            NUR_REVIEW_OUTPUT_DIR="output/day_$(printf \"%02d\" "$day")" python telegram_review.py
+            NUR_REVIEW_OUTPUT_DIR="output/day_0${day}" python telegram_review.py
           done
 
       - name: Upload generated media for review
