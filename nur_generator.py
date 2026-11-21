@@ -875,6 +875,7 @@ async def run_pipeline():
         print("4. Producing cinematic scenes...")
 
         segments = []
+        agnes_video_used = False
 
         for index, scene in enumerate(
             plan["video"]["scenes"]
