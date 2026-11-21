@@ -21,8 +21,9 @@ from visual_providers import generate_gemini_image, search_pixabay_photo, search
 
 
 ROOT = Path(__file__).resolve().parent
-OUTPUT = ROOT / "output"
-OUTPUT.mkdir(exist_ok=True)
+BATCH_DAY = os.getenv("NUR_BATCH_DAY", "").strip()
+OUTPUT = ROOT / "output" / (f"day_{int(BATCH_DAY):02d}" if BATCH_DAY.isdigit() and int(BATCH_DAY) > 0 else "")
+OUTPUT.mkdir(parents=True, exist_ok=True)
 
 WIDTH = 1080
 HEIGHT = 1920
