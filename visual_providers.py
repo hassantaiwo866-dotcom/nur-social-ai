@@ -154,7 +154,7 @@ def search_pixabay_photo(query: str, destination: str | Path,
 
 def search_pixabay_video(query: str, destination: str | Path, *,
                          api_key: str | None = None,
-                         min_width: int = 720, min_height: int = 1280,
+                         min_width: int = 1280, min_height: int = 720,
                          registry: list[dict[str, Any]] | None = None,
                          session=requests) -> Path:
     """Download a portrait stock-video clip and verify it with ffprobe."""

@@ -534,9 +534,12 @@ def make_video_segment_from_clip(
         "ffmpeg", "-y", "-stream_loop", "-1",
         "-i", str(clip_path), "-i", str(overlay_path), "-i", str(audio_path),
         "-filter_complex",
-        "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,"
-        "crop=1080:1920,setsar=1[background];"
-        "[background][1:v]overlay=0:0:format=auto,format=yuv420p[video]",
+        "[0:v]split=2[foreground_source][background_source];"
+        "[background_source]scale=1080:1920:force_original_aspect_ratio=increase,"
+        "crop=1080:1920,boxblur=24:10,eq=brightness=-0.18:saturation=0.78[background];"
+        "[foreground_source]scale=1080:1920:force_original_aspect_ratio=decrease[foreground];"
+        "[background][foreground]overlay=(W-w)/2:(H-h)/2[composed];"
+        "[composed][1:v]overlay=0:0:format=auto,format=yuv420p[video]",
         "-map", "[video]", "-map", "2:a",
         "-af", "apad", "-t", str(duration), "-r", str(FPS),
         "-c:v", "libx264", "-preset", "medium", "-crf", "19",

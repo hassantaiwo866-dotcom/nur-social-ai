@@ -99,8 +99,8 @@ class VisualProviderTests(unittest.TestCase):
             self.assertEqual(registry[0]["media_type"], "stock_video")
             params = session.get.call_args_list[0].kwargs["params"]
             self.assertNotIn("orientation", params)
-            self.assertEqual(params["min_width"], 720)
-            self.assertEqual(params["min_height"], 1280)
+            self.assertEqual(params["min_width"], 1280)
+            self.assertEqual(params["min_height"], 720)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ Nūr's visual pipeline must use topic-matched, high-quality visual material rath
 - **Nūr motion graphics**: generated locally with Pillow/FFmpeg for explanatory sequences and branded transitions; these are not presented as photography or footage.
 
 ## Quality and safety rules
-- Prefer real, relevant stock footage for story-driven video when a suitable clip is available. Pixabay's video API does not provide an orientation filter; high-resolution landscape clips can be reframed to vertical by the renderer, so the subject must be checked for crop safety.
+- Prefer real, relevant portrait footage for story-driven video when a suitable clip is available.
 - Prefer AI-generated images when the desired scene is unavailable in stock libraries or would otherwise be visually incoherent.
 - Never label an AI image as a photograph captured by a human.
 - Keep source, creator, asset ID, licence and source page in the media manifest where supplied.

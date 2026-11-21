@@ -81,6 +81,37 @@ class MediaQualityTests(unittest.TestCase):
         self.assertEqual(filter_graph.count("acrossfade="), 2)
         self.assertIn("offset=3.650", filter_graph)
 
+    @patch("media_quality.subprocess.run")
+    def test_stock_clip_vertical_reframe_preserves_full_shot(self, run):
+        from media_quality import render_scene_overlay
+        from pathlib import Path
+        from PIL import Image
+        import tempfile
+        run.return_value.returncode = 0
+        with tempfile.TemporaryDirectory() as folder:
+            overlay = Path(folder) / "overlay.png"
+            render_scene_overlay(
+                {"beat": "THE PAUSE", "on_screen_text": "Notice the moment."},
+                overlay,
+            )
+            with Image.open(overlay) as image:
+                self.assertEqual(image.size, (1080, 1920))
+                self.assertEqual(image.mode, "RGBA")
+            generator_path = Path(folder) / "clip.mp4"
+            audio = Path(folder) / "voice.mp3"
+            output = Path(folder) / "output.mp4"
+            generator_path.write_bytes(b"clip")
+            audio.write_bytes(b"audio")
+            import nur_generator
+            nur_generator.make_video_segment_from_clip(
+                generator_path, overlay, audio, output, 4.0
+            )
+        command = run.call_args.args[0]
+        graph = command[command.index("-filter_complex") + 1]
+        self.assertIn("boxblur", graph)
+        self.assertIn("force_original_aspect_ratio=decrease", graph)
+        self.assertIn("overlay=(W-w)/2:(H-h)/2", graph)
+
 
 if __name__ == "__main__":
     unittest.main()
