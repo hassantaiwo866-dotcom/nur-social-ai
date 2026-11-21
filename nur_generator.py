@@ -103,7 +103,6 @@ def fetch_cinematic_photo(prompt, width, height, filename):
         if res.status_code == 200 and len(res.content) > 2500:
             with open(filename, "wb") as f:
                 f.write(res.content)
-            # Verify valid image and resize cleanly
             with Image.open(filename) as im:
                 im = im.convert("RGB").resize((width, height), Image.Resampling.LANCZOS)
                 im = apply_subtle_grain(im, intensity=10)
@@ -112,7 +111,6 @@ def fetch_cinematic_photo(prompt, width, height, filename):
     except Exception as e:
         print(f"Photo API fallback triggered ({e}) — crafting studio editorial backdrop...")
 
-    # Fallback: Layered Deep Forest & Near Black Editorial Canvas with subtle grain
     img = Image.new("RGB", (width, height), NEAR_BLACK)
     draw = ImageDraw.Draw(img)
     for y in range(height):
@@ -139,8 +137,7 @@ def generate_editorial_plan(brand, history):
         "You are the Creative Director for Nūr (spelled strictly 'Nūr' with a macron ū, NEVER 'NŪR'). "
         "Nūr is a serious, thoughtfully designed technology and personal-development company. "
         "Tagline: 'Build the person you want to become.' "
-        "Tone: Calm, intelligent, premium, human, empowering. British English spelling (e.g., realisation, behaviour, focus). "
-        "NEVER sound like a generic motivational page, religious guilt platform, or cheap screen-time blocker. "
+        "Tone: Calm, intelligent, premium, human, empowering. British English spelling. "
         "Output ONLY valid raw JSON with no markdown backticks."
     )
 
@@ -151,12 +148,12 @@ Avoid repeating these recent topics: {recent_topics}.
 Return a JSON object with this exact structure:
 {{
   "topic_slug": "short-unique-topic-id",
-  "pillar_label": "SHORT UPPERCASE EDITORIAL LABEL (e.g. DIGITAL SELF-CONTROL)",
+  "pillar_label": "SHORT UPPERCASE EDITORIAL LABEL",
   "graphic": {{
     "theme": "dark_forest or warm_ivory",
     "headline": "Calm, powerful editorial statement (6 to 11 words, sentence case, ends with a period)",
     "subtext": "Thoughtful, grounded reflection expanding on the headline (16 to 24 words)",
-    "photo_prompt": "Realistic, quiet photograph scene (e.g. closed leather notebook and brass pen on a wooden desk in soft morning light)"
+    "photo_prompt": "Realistic, quiet photograph scene"
   }},
   "caption_image": "Thoughtful British English social caption (3 short paragraphs) + 4 understated hashtags including #Nur",
   "video": {{
@@ -166,25 +163,25 @@ Return a JSON object with this exact structure:
         "beat": "01 · THE HOOK",
         "voiceover": "Immediate relatable opening line (8-12 words)",
         "on_screen_text": "Short 4-6 word caption",
-        "image_prompt": "Wide/medium realistic cinematic shot: person glancing at smartphone screen in dimly lit quiet room"
+        "image_prompt": "Wide/medium realistic cinematic shot"
       }},
       {{
         "beat": "02 · THE PROBLEM",
         "voiceover": "Quiet consequence of distraction without shame (10-14 words)",
         "on_screen_text": "Short 4-6 word caption",
-        "image_prompt": "Close-up realistic cinematic shot: open unfinished notebook and cold cup of tea beside a phone on wooden desk"
+        "image_prompt": "Close-up realistic cinematic shot"
       }},
       {{
         "beat": "03 · THE REALISATION",
         "voiceover": "Grounded insight about environment and attention (11-15 words)",
         "on_screen_text": "Short 4-6 word caption",
-        "image_prompt": "Over-the-shoulder realistic shot: person looking out a window onto green trees in soft natural daylight"
+        "image_prompt": "Over-the-shoulder realistic shot"
       }},
       {{
         "beat": "04 · THE RESPONSE",
         "voiceover": "Intentional, calm action to reclaim focus (10-14 words)",
         "on_screen_text": "Short 4-6 word caption",
-        "image_prompt": "Close-up realistic shot: hand gently placing smartphone face-down on a dark wooden table and opening a book"
+        "image_prompt": "Close-up realistic shot"
       }}
     ]
   }},
@@ -225,7 +222,6 @@ Return a JSON object with this exact structure:
 
 
 def build_editorial_graphic(plan, output_path="nur_post.png"):
-    """Builds a 1080x1350 layered editorial Instagram feed card following Nūr v1.0 standards."""
     W, H = 1080, 1350
     g = plan["graphic"]
     use_ivory = g.get("theme") == "warm_ivory"
@@ -238,19 +234,214 @@ def build_editorial_graphic(plan, output_path="nur_post.png"):
     canvas = Image.new("RGB", (W, H), bg_color)
     draw = ImageDraw.Draw(canvas)
 
-    # 1. Outer & Inner Geometric Framing
     outer_pad = 48
     inner_pad = 64
     draw.rectangle([outer_pad, outer_pad, W - outer_pad, H - outer_pad], outline=accent, width=1)
     draw.rectangle([inner_pad, inner_pad, W - inner_pad, H - inner_pad], outline=accent, width=1)
 
-    # 2. Top Editorial Header Bar (Wordmark left, Pillar label right)
     logo_font = get_font(34, bold=True, serif=True)
     label_font = get_font(18, bold=False, serif=False)
 
     draw.text((104, 96), "Nūr", fill=text_primary, font=logo_font)
     pillar_text = plan.get("pillar_label", "INTENTIONAL LIVING").upper()
     p_bbox = draw.textbbox((0, 0), pillar_text, font=label_font)
+    draw.text((W - 104 - (p_bbox[2] - p_bbox[0]), 106), pillar_text, fill=accent, font=label_font)
+
+    draw.line([(104, 158), (W - 104, 158)], fill=accent, width=1)
+
+    photo_w, photo_h = W - 208, 490
+    temp_photo = "temp_editorial_photo.jpg"
+    fetch_cinematic_photo(g["photo_prompt"], photo_w, photo_h, temp_photo)
+
+    with Image.open(temp_photo) as photo:
+        draw.rectangle([102, 198, 106 + photo_w, 202 + photo_h], outline=accent, width=1)
+        canvas.paste(photo, (104, 200))
+
+    headline_font = get_font(50, bold=True, serif=True)
+    body_font = get_font(27, bold=False, serif=False)
+    footer_font = get_font(18, bold=False, serif=False)
+
+    y_cursor = 740
+    headline_lines = wrap_text(g["headline"], headline_font, W - 208, draw)
+    for line in headline_lines[:4]:
+        draw.text((104, y_cursor), line, fill=text_primary, font=headline_font)
+        y_cursor += 64
+
+    y_cursor += 18
+    draw.line([(104, y_cursor), (224, y_cursor)], fill=accent, width=2)
+    y_cursor += 32
+
+    body_lines = wrap_text(g["subtext"], body_font, W - 208, draw)
+    for line in body_lines[:4]:
+        draw.text((104, y_cursor), line, fill=text_secondary, font=body_font)
+        y_cursor += 40
+
+    draw.line([(104, H - 140), (W - 104, H - 140)], fill=accent, width=1)
+    draw.text((104, H - 116), "Build the person you want to become.", fill=text_secondary, font=footer_font)
+    edition_str = "EDITION · 01"
+    e_bbox = draw.textbbox((0, 0), edition_str, font=footer_font)
+    draw.text((W - 104 - (e_bbox[2] - e_bbox[0]), H - 116), edition_str, fill=accent, font=footer_font)
+
+    canvas = apply_subtle_grain(canvas, intensity=7)
+    canvas.save(output_path, quality=95)
+    if os.path.exists(temp_photo):
+        os.remove(temp_photo)
+    return output_path
+
+
+async def synthesize_voice(text, audio_path):
+    communicate = edge_tts.Communicate(text, "en-GB-RyanNeural", rate="-6%")
+    await communicate.save(audio_path)
+
+
+def create_caption_overlay(width, height, beat_label, caption_text):
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    brand_font = get_font(30, bold=True, serif=True)
+    beat_font = get_font(18, bold=False, serif=False)
+    draw.text((72, 110), "Nūr", fill=(245, 240, 225, 230), font=brand_font)
+    draw.text((72, 152), beat_label.upper(), fill=(212, 175, 55, 220), font=beat_font)
+
+    cap_font = get_font(38, bold=False, serif=False)
+    lines = wrap_text(caption_text, cap_font, width - 180, draw)
+    box_height = len(lines) * 52 + 56
+    box_top = height - 340 - box_height
+
+    draw.rectangle([64, box_top, width - 64, box_top + box_height], fill=(8, 8, 8, 175))
+    draw.line([(64, box_top), (width - 64, box_top)], fill=(212, 175, 55, 220), width=2)
+
+    y = box_top + 28
+    for line in lines:
+        bbox = draw.textbbox((0, 0), line, font=cap_font)
+        x = (width - (bbox[2] - bbox[0])) // 2
+        draw.text((x, y), line, fill=(245, 240, 225, 255), font=cap_font)
+        y += 52
+
+    temp_ov = f"temp_ov_{random.randint(1000,9999)}.png"
+    overlay.save(temp_ov)
+    return temp_ov
+
+
+def build_closing_endcard(width, height):
+    card = Image.new("RGB", (width, height), DEEP_FOREST)
+    draw = ImageDraw.Draw(card)
+
+    pad = 64
+    draw.rectangle([pad, pad, width - pad, height - pad], outline=MUTED_GOLD, width=2)
+
+    logo_font = get_font(96, bold=True, serif=True)
+    tag_font = get_font(34, bold=False, serif=True)
+
+    l_bbox = draw.textbbox((0, 0), "Nūr", font=logo_font)
+    lx = (width - (l_bbox[2] - l_bbox[0])) // 2
+    ly = (height // 2) - 110
+    draw.text((lx, ly), "Nūr", fill=WARM_IVORY, font=logo_font)
+
+    draw.line([(width // 2 - 90, ly + 125), (width // 2 + 90, ly + 125)], fill=MUTED_GOLD, width=2)
+
+    tagline = "Build the person you want to become."
+    t_bbox = draw.textbbox((0, 0), tagline, font=tag_font)
+    tx = (width - (t_bbox[2] - t_bbox[0])) // 2
+    draw.text((tx, ly + 155), tagline, fill=WARM_IVORY, font=tag_font)
+
+    card = apply_subtle_grain(card, intensity=8)
+    end_path = "temp_nur_endcard.png"
+    card.save(end_path, quality=95)
+    return end_path
+
+
+async def build_cinematic_reel(plan, output_path="nur_reel.mp4"):
+    W, H = 1080, 1920
+    clips = []
+    temp_files = []
+
+    for idx, scene in enumerate(plan["video"]["scenes"]):
+        img_file = f"temp_scene_{idx}.jpg"
+        aud_file = f"temp_scene_{idx}.mp3"
+        temp_files.extend([img_file, aud_file])
+
+        fetch_cinematic_photo(scene["image_prompt"], W, H, img_file)
+        await synthesize_voice(scene["voiceover"], aud_file)
+
+        audio_clip = AudioFileClip(aud_file)
+        duration = audio_clip.duration + 0.45
+
+        bg_clip = (
+            ImageClip(img_file)
+            .set_duration(duration)
+            .resize(lambda t: 1.0 + 0.035 * (t / duration))
+            .set_position("center")
+        )
+
+        ov_file = create_caption_overlay(W, H, scene["beat"], scene["on_screen_text"])
+        temp_files.append(ov_file)
+        ov_clip = ImageClip(ov_file).set_duration(duration)
+
+        scene_comp = CompositeVideoClip([bg_clip, ov_clip], size=(W, H)).set_audio(audio_clip)
+        clips.append(scene_comp)
+
+    end_audio = "temp_end_audio.mp3"
+    temp_files.append(end_audio)
+    await synthesize_voice("Nūr. Build the person you want to become.", end_audio)
+    end_aud_clip = AudioFileClip(end_audio)
+    end_dur = end_aud_clip.duration + 1.0
+
+    end_img = build_closing_endcard(W, H)
+    temp_files.append(end_img)
+    end_clip = ImageClip(end_img).set_duration(end_dur).set_audio(end_aud_clip)
+    clips.append(end_clip)
+
+    final_video = concatenate_videoclips(clips, method="compose")
+    final_video.write_videofile(
+        output_path,
+        fps=24,
+        codec="libx264",
+        audio_codec="aac",
+        preset="medium",
+        threads=2,
+        logger=None,
+    )
+
+    for f in temp_files:
+        if os.path.exists(f):
+            try:
+                os.remove(f)
+            except Exception:
+                pass
+
+    return output_path
+
+
+async def run_pipeline():
+    brand = load_json("brand_config.json", {"pillars": ["Digital Self-Control"]})
+    history = load_json("history.json", [])
+
+    print("1. Generating Nūr editorial plan via OpenRouter...")
+    plan = generate_editorial_plan(brand, history)
+
+    print("2. Creating Nūr layered editorial graphic (1080x1350)...")
+    build_editorial_graphic(plan, "nur_post.png")
+
+    print("3. Creating Nūr cinematic vertical film (1080x1920)...")
+    await build_cinematic_reel(plan, "nur_reel.mp4")
+
+    save_json(
+        "latest_post.json",
+        {
+            "image_caption": plan["caption_image"],
+            "video_caption": plan["caption_video"],
+            "topic": plan["topic_slug"],
+        },
+    )
+
+    history.append(plan["topic_slug"])
+    save_json("history.json", history[-50:])
+    print("4. Nūr production pipeline complete.")
+
+
+if __name__ == "__main__":
+    asyncio.run(run_pipeline())pillar_text, font=label_font)
     draw.text((W - 104 - (p_bbox[2] - p_bbox[0]), 106), pillar_text, fill=accent, font=label_font)
 
     # Thin horizontal rule under header
