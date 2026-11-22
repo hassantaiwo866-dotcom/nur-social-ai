@@ -1,5 +1,5 @@
 import unittest
-from story_format import validate_story_plan, scene_defaults_for_beat, VISUAL_STYLES, complete_missing_captions
+from story_format import validate_story_plan, scene_defaults_for_beat, VISUAL_STYLES, complete_missing_captions, repair_payoff_action
 
 class StoryFormatTests(unittest.TestCase):
     def plan(self):
@@ -42,6 +42,13 @@ class StoryFormatTests(unittest.TestCase):
     def test_missing_direction_rejected(self):
         plan=self.plan(); plan["video"]["scenes"][0]["movement"]=""
         with self.assertRaisesRegex(ValueError,"movement"): validate_story_plan(plan)
+    def test_payoff_without_action_is_repaired(self):
+        plan = self.plan()
+        plan["video"]["scenes"][3]["voiceover"] = "Everything feels complicated."
+        repair_payoff_action(plan)
+        self.assertIn("choose one small action", plan["video"]["scenes"][3]["voiceover"].lower())
+        validate_story_plan(plan)
+
     def test_payoff_action_required(self):
         plan=self.plan(); plan["video"]["scenes"][3]["voiceover"]="Everything feels complicated."
         with self.assertRaisesRegex(ValueError,"practical next step"): validate_story_plan(plan)

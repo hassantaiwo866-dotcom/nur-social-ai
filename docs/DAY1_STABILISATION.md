@@ -39,3 +39,11 @@ Unit tests cover model discovery/preference, Commons licence screening and local
 - Set the moving accent drawbox to evaluate expressions per frame, enabling its time-based horizontal animation.
 - Lower the voice low-pass cutoff to 11 kHz to stay below Nyquist for 24 kHz voice tracks.
 - This addresses the errors observed in production run #37; full media generation still requires a fresh Actions run.
+
+
+## 22 November 2026 — run #39 FFmpeg compatibility and payoff repair
+
+- Removed unsupported `eval=frame` from FFmpeg's `drawbox` filter. The time-based x expression remains; no unsupported filter option is passed.
+- Added deterministic payoff repair when a generated final scene lacks a practical action. The original voiceover is preserved and a concise, non-shaming next step is appended before validation.
+- Gemini read timeouts remain provider-side failures; the existing Groq/local fallback remains active.
+- Added regression coverage for payoff repair. CI and a real FFmpeg render are required before claiming production success.
