@@ -40,10 +40,10 @@ def complete_missing_captions(plan: dict) -> dict:
     if not str(plan.get("caption_image", "")).strip():
         headline = str(graphic.get("headline", "")).strip()
         subtext = str(graphic.get("subtext", "")).strip()
-        plan["caption_image"] = "\\n\\n".join(part for part in (headline, subtext, "Choose one helpful next step.", "#SelfControl #PersonalGrowth #Nūr") if part)
+        plan["caption_image"] = "\n\n".join(part for part in (headline, subtext, "Choose one helpful next step.", "#SelfControl #PersonalGrowth #Nūr") if part)
     if not str(plan.get("caption_video", "")).strip():
         title = str(video.get("title", "")).strip()
         lines = [str(scene.get("voiceover", "")).strip() for scene in scenes if isinstance(scene, dict)]
         body = " ".join(line for line in lines if line)
-        plan["caption_video"] = "\\n\\n".join(part for part in (title, body, "#SelfControl #Recovery #PersonalGrowth #Nūr") if part)
+        plan["caption_video"] = "\n\n".join(part for part in (title, body, "#SelfControl #Recovery #PersonalGrowth #Nūr") if part)
     return plan
