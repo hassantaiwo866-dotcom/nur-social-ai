@@ -160,3 +160,16 @@ if __name__ == "__main__":
             with Image.open(overlay) as image:
                 self.assertEqual(image.mode, "RGBA")
                 self.assertEqual(image.size, (1080, 1920))
+
+
+class MotionAccentCompatibilityTests(unittest.TestCase):
+    def test_accent_uses_static_ffmpeg_coordinates(self):
+        from nur_generator import motion_accent_filter
+        for index in range(4):
+            value = motion_accent_filter(index)
+            self.assertIn("drawbox=x=", value)
+            self.assertNotIn("eval=", value)
+            self.assertNotIn("t*560", value)
+            self.assertNotIn("W-190", value)
+            self.assertIn("color=0B5D3B@1", value)
+

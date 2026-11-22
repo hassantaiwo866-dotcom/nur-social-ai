@@ -570,8 +570,10 @@ def probe_duration(path):
 def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary"):
     """Return a short travelling Nūr emerald accent line for the scene."""
     y = 1435 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 151
-    x = "t*560-190" if int(scene_index) % 2 == 0 else "W-190-t*560"
-    return f"drawbox=x='{x}':y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
+    # Fixed coordinates are portable across FFmpeg drawbox implementations.
+    # Alternate sides by scene; reliability takes priority over line animation.
+    x = 80 if int(scene_index) % 2 == 0 else 810
+    return f"drawbox=x={x}:y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
 
 
 def make_video_segment_from_clip(
