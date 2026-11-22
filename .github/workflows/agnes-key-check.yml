@@ -1,0 +1,30 @@
+name: Agnes API Key Check (No Generation)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-key:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install requests
+        run: python -m pip install requests
+
+      - name: Verify key and list target model availability
+        env:
+          AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
+        run: python scripts/agnes_key_check.py
+
+      - name: Run smoke-check tests
+        run: python -m unittest discover -s tests -p test_agnes_key_check.py
