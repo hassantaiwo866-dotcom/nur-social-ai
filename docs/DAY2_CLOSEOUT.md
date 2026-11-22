@@ -13,6 +13,10 @@ This closeout adds regression coverage for the Day 2 visual system already prese
 - Documentary and tactile/hybrid collage presentation paths.
 - Nūr primary emerald graphic rule and caption overflow rejection.
 
+## Automated workflow
+
+Added `.github/workflows/day2-visual-tests.yml` to install the pinned project requirements and run the complete unittest suite on pull requests targeting the stabilisation branch. It can also be run manually with `workflow_dispatch`.
+
 ## Final regression coverage added
 
 `tests/test_day2_visual_closeout.py` checks:
