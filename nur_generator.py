@@ -167,7 +167,7 @@ def discover_gemini_model(api_key, preferred=None, excluded=None):
     names=[_model_name(m) for m in models if "generateContent" in m.get("supportedGenerationMethods",[])]
     excluded=set(excluded or [])
     names=[n for n in names if n not in excluded]
-    if preferred and preferred in names: return preferred
+    if preferred and preferred in names and preferred != "gemini-2.5-flash": return preferred
     if not names: raise RuntimeError("Gemini account exposes no usable generateContent models.")
     # Prefer the model explicitly recommended by the API's 404 response, then
     # newer Flash families. Avoid selecting Gemini 2.5 Flash as a first choice.
