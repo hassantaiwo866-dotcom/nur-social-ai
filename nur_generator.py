@@ -19,6 +19,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
 from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
 from cloudflare_visuals import generate_image as generate_cloudflare_image
+from visual_prompting import compose_generation_prompt, build_stock_search_query
 
 
 ROOT = Path(__file__).resolve().parent
@@ -312,13 +313,21 @@ def _generate_local_illustration(prompt, width, height, destination):
     return Path(destination)
 
 
-def generate_photo(prompt,width,height,destination):
-    """Use Cloudflare free-plan image generation, then existing licensed fallbacks."""
+def generate_photo(prompt,width,height,destination,scene=None):
+    """Use composed visual prompts, then existing licensed fallbacks."""
     destination = Path(destination)
+    scene = scene if isinstance(scene, dict) else {}
+    generation_prompt = compose_generation_prompt(
+        prompt,
+        camera_direction=scene.get("camera_direction", ""),
+        movement=scene.get("movement", ""),
+        beat=scene.get("beat", ""),
+    )
+    stock_query = build_stock_search_query(prompt)
     if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
         try:
             print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
-            path = generate_cloudflare_image(prompt, destination)
+            path = generate_cloudflare_image(generation_prompt, destination)
             ASSET_ATTRIBUTIONS.append({
                 "provider": "Cloudflare Workers AI",
                 "model": "@cf/black-forest-labs/flux-1-schnell",
@@ -334,19 +343,19 @@ def generate_photo(prompt,width,height,destination):
             and os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes")):
         try:
             print("Generating an original scene image with Gemini (paid mode explicitly enabled)...")
-            path = generate_gemini_image(prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS)
+            path = generate_gemini_image(generation_prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS)
             return enhance_photo(path)
         except Exception as exc:
             print(f"Gemini image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
     if os.getenv("PIXABAY_API_KEY", "").strip():
         try:
             print("Searching Pixabay for a licensed editorial photograph...")
-            path = search_pixabay_photo(prompt, destination, width, height, registry=ASSET_ATTRIBUTIONS)
+            path = search_pixabay_photo(stock_query, destination, width, height, registry=ASSET_ATTRIBUTIONS)
             return enhance_photo(path)
         except Exception as exc:
             print(f"Pixabay photo search unavailable: {type(exc).__name__}: {str(exc)[:240]}")
     import re
-    query = " ".join(re.findall(r"[A-Za-z0-9 ]+", str(prompt)))[:180]
+    query = stock_query
     try:
         path = _search_commons(query,width,height,destination)
     except Exception as exc:
@@ -913,7 +922,7 @@ async def run_pipeline():
                 try:
                     print("Searching for real portrait video footage...")
                     clip = search_pixabay_video(
-                        scene["image_prompt"],
+                        build_stock_search_query(scene["image_prompt"]),
                         temp / f"scene_{index}.mp4",
                         registry=ASSET_ATTRIBUTIONS,
                     )
@@ -929,6 +938,7 @@ async def run_pipeline():
                     WIDTH,
                     HEIGHT,
                     temp / f"scene_{index}.jpg",
+                    scene=scene,
                 )
                 frame = build_scene_frame(
                     photo,
