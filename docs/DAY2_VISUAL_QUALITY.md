@@ -102,3 +102,13 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Unknown movement descriptions safely fall back to an alternating lateral drift.
 - This improves connection between scene direction and motion while retaining the same image provider, FFmpeg renderer and no-cost local pipeline.
 - Tests validate generated FFmpeg crop expressions for two directions. CI is required before considering the implementation verified.
+
+
+## Day 2 implementation — scene-aware prompt composition
+
+- Generation prompts preserve the editorial subject/action while adding premium documentary realism, deliberate focal hierarchy, realistic natural light and camera texture, vertical 9:16 framing, and overlay-safe negative space.
+- Generation prompts prohibit embedded text, logos, watermarks, UI, collage/poster layouts, artificial green tint and staged stock-photo poses.
+- Scene camera direction, movement and story beat are supplied to image-generation providers where available.
+- Stock-library searches use concise subject/action keywords rather than long cinematic instructions, improving query relevance and reducing noise.
+- The new `visual_prompting.py` module is deterministic and local-only. It makes no API calls and does not alter provider enablement, pricing, licensing or fallback behavior.
+- Unit tests cover subject preservation, composition constraints, empty prompts, stock-query shortening and fallback terms.
