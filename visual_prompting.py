@@ -21,7 +21,7 @@ STOCK_STOP_WORDS = {
     "image", "scene", "natural", "lighting", "light", "composition", "vertical",
     "portrait", "camera", "shot", "close", "wide", "medium", "detail", "soft",
     "warm", "subtle", "believable", "authentic", "premium", "film", "style",
-    "depth", "focus", "background", "foreground", "midground", "with", "and",
+    "depth", "focus", "texture", "background", "foreground", "midground", "with", "and",
     "the", "a", "an", "in", "on", "at", "of", "for", "to", "from", "by",
     "person", "people", "human", "show", "showing", "illustrate", "visual",
     "actual", "real", "no", "avoid", "not", "without", "over", "rather",
