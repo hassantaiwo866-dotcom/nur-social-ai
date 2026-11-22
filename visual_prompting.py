@@ -29,7 +29,8 @@ STOCK_STOP_WORDS = {
 
 
 def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
-                             movement: str = "", beat: str = "") -> str:
+                             movement: str = "", beat: str = "",
+                             sequence_direction: str = "") -> str:
     """Add quality and composition constraints without changing scene meaning."""
     subject = re.sub(r"\s+", " ", str(scene_prompt or "")).strip()
     if not subject:
@@ -37,6 +38,7 @@ def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
     direction = " ".join(str(camera_direction or "").split())
     motion = " ".join(str(movement or "").split())
     story_beat = " ".join(str(beat or "").split())
+    sequence = " ".join(str(sequence_direction or "").split())
     details = []
     if story_beat:
         details.append(f"Story beat: {story_beat}.")
@@ -44,6 +46,8 @@ def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
         details.append(f"Camera framing: {direction}.")
     if motion:
         details.append(f"Implied camera movement: {motion}.")
+    if sequence:
+        details.append(f"Story continuity direction: {sequence}")
     return " ".join([
         GENERATION_STYLE,
         "Scene subject and action:", subject,

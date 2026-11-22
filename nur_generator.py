@@ -20,6 +20,7 @@ from media_quality import enhance_photo, render_scene_frame, render_scene_overla
 from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
 from cloudflare_visuals import generate_image as generate_cloudflare_image
 from visual_prompting import compose_generation_prompt, build_stock_search_query
+from visual_continuity import scene_sequence_direction
 
 
 ROOT = Path(__file__).resolve().parent
@@ -322,6 +323,7 @@ def generate_photo(prompt,width,height,destination,scene=None):
         camera_direction=scene.get("camera_direction", ""),
         movement=scene.get("movement", ""),
         beat=scene.get("beat", ""),
+        sequence_direction=scene.get("sequence_direction", ""),
     )
     stock_query = build_stock_search_query(prompt)
     if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
@@ -933,12 +935,16 @@ async def run_pipeline():
             frame = None
             overlay = None
             if clip is None:
+                scene_with_continuity = dict(scene)
+                scene_with_continuity["sequence_direction"] = scene_sequence_direction(
+                    index, len(plan["video"]["scenes"])
+                )
                 photo = generate_photo(
                     scene["image_prompt"],
                     WIDTH,
                     HEIGHT,
                     temp / f"scene_{index}.jpg",
-                    scene=scene,
+                    scene=scene_with_continuity,
                 )
                 frame = build_scene_frame(
                     photo,

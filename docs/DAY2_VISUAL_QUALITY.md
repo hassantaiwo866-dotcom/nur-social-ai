@@ -112,3 +112,14 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Stock-library searches use concise subject/action keywords rather than long cinematic instructions, improving query relevance and reducing noise.
 - The new `visual_prompting.py` module is deterministic and local-only. It makes no API calls and does not alter provider enablement, pricing, licensing or fallback behavior.
 - Unit tests cover subject preservation, composition constraints, empty prompts, stock-query shortening and fallback terms.
+
+
+## Day 2 implementation — four-scene visual continuity
+
+- Added a deterministic scene-sequence director for the four story beats: opening, development, re-hook and payoff.
+- Image-generation prompts now receive a scene-position instruction: establish the human subject and visual world, continue with the next believable moment, renew attention through a meaningful framing/detail change, then resolve with a grounded action.
+- Continuity is guidance, not a forced same-person/same-location rule. It explicitly allows the story to change setting or subject when the editorial plan requires it.
+- Existing scene prompts, camera directions, movement, provider selection, stock search and licensed-asset fallbacks remain intact.
+- The module is local-only and introduces no API calls, credentials, dependencies or generation costs.
+- Unit tests cover the ordered four-beat arc, non-standard scene counts, invalid indices and prompt integration.
+- Automated tests verify deterministic instructions, not whether generated scenes actually look continuous. Inspect the resulting four-scene video before publication.
