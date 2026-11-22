@@ -4,7 +4,7 @@ import json
 import math
 import os
 import random
-from story_format import validate_story_plan, scene_defaults_for_beat
+from story_format import validate_story_plan, scene_defaults_for_beat, complete_missing_captions
 import shutil
 import struct
 import subprocess
@@ -159,16 +159,25 @@ def _model_name(item):
     return str(item.get("name") or item.get("id") or "").strip().rsplit("/", 1)[-1]
 
 
-def discover_gemini_model(api_key, preferred=None):
+def discover_gemini_model(api_key, preferred=None, excluded=None):
     r=requests.get("https://generativelanguage.googleapis.com/v1beta/models",
         headers={"x-goog-api-key":api_key},params={"pageSize":1000},timeout=30)
     r.raise_for_status()
     models=r.json().get("models",[])
     names=[_model_name(m) for m in models if "generateContent" in m.get("supportedGenerationMethods",[])]
-    if preferred and preferred in names: return preferred
-    if not names: raise RuntimeError("Gemini account exposes no generateContent models.")
-    flash=sorted(n for n in names if "flash" in n.lower())
-    return (flash or sorted(names))[0]
+    excluded=set(excluded or [])
+    names=[n for n in names if n not in excluded]
+    if preferred and preferred in names and preferred != "gemini-2.5-flash": return preferred
+    if not names: raise RuntimeError("Gemini account exposes no usable generateContent models.")
+    # Prefer the model explicitly recommended by the API's 404 response, then
+    # newer Flash families. Avoid selecting Gemini 2.5 Flash as a first choice.
+    for candidate in ("gemini-3.8-flash","gemini-3.0-flash"):
+        if candidate in names: return candidate
+    flash=sorted(n for n in names if "flash" in n.lower() and n != "gemini-2.5-flash")
+    if flash: return flash[0]
+    legacy_flash=sorted(n for n in names if "flash" in n.lower())
+    if legacy_flash: return legacy_flash[0]
+    return sorted(names)[0]
 
 
 def discover_groq_model(api_key, preferred=None):
@@ -380,6 +389,7 @@ Make the four visual scenes noticeably different, realistic and cinematic. Avoid
 """
 
     def validate_plan(plan):
+        plan = complete_missing_captions(plan)
         if not isinstance(plan, dict):
             raise ValueError("Editorial response must be a JSON object.")
         required = ("topic_slug", "pillar_label", "graphic", "caption_image", "video", "caption_video")

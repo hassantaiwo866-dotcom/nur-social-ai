@@ -23,6 +23,23 @@ class ProviderDiscoveryTests(unittest.TestCase):
         get.return_value=r
         self.assertEqual(generator.discover_gemini_model("key","retired"),"gemini-2.5-flash")
 
+
+    def test_gemini_prefers_api_recommended_new_flash(self):
+        r=Mock(); r.raise_for_status.return_value=None
+        r.json.return_value={"models":[
+            {"name":"models/gemini-2.5-flash","supportedGenerationMethods":["generateContent"]},
+            {"name":"models/gemini-3.8-flash","supportedGenerationMethods":["generateContent"]}]}
+        with patch("nur_generator.requests.get",return_value=r):
+            self.assertEqual(generator.discover_gemini_model("key"),"gemini-3.8-flash")
+
+    def test_gemini_excludes_failed_model(self):
+        r=Mock(); r.raise_for_status.return_value=None
+        r.json.return_value={"models":[
+            {"name":"models/gemini-2.5-flash","supportedGenerationMethods":["generateContent"]},
+            {"name":"models/gemini-3.8-flash","supportedGenerationMethods":["generateContent"]}]}
+        with patch("nur_generator.requests.get",return_value=r):
+            self.assertEqual(generator.discover_gemini_model("key",excluded=["gemini-3.8-flash"]),"gemini-2.5-flash")
+
     @patch("nur_generator.requests.get")
     def test_groq_honours_only_available_preference(self,get):
         r=Mock(); r.raise_for_status.return_value=None
