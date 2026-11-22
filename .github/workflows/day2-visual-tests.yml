@@ -1,0 +1,36 @@
+name: Day 2 Visual Quality Tests
+
+on:
+  pull_request:
+    branches:
+      - stabilise/day-1-provider-media-resilience
+    paths:
+      - "**.py"
+      - "requirements.txt"
+      - ".github/workflows/day2-visual-tests.yml"
+      - "docs/DAY2_CLOSEOUT.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-quality-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run complete unit test suite
+        run: python -m unittest discover -s tests -v
