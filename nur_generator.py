@@ -175,6 +175,8 @@ def discover_gemini_model(api_key, preferred=None, excluded=None):
         if candidate in names: return candidate
     flash=sorted(n for n in names if "flash" in n.lower() and n != "gemini-2.5-flash")
     if flash: return flash[0]
+    legacy_flash=sorted(n for n in names if "flash" in n.lower())
+    if legacy_flash: return legacy_flash[0]
     return sorted(names)[0]
 
 
