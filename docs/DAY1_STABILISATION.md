@@ -24,3 +24,9 @@ No Pexels secret is needed. Existing local editorial fallback, branded graphic, 
 
 ## Verification
 Unit tests cover model discovery/preference, Commons licence screening and local illustration fallback. A full Actions run with real text-provider secrets remains necessary to verify account access, quota, live Commons sourcing or local fallback, media assembly and final QA.
+
+## 22 November 2026 — provider output/model failure recovery
+
+- The latest production log showed Gemini's catalogue returning `gemini-2.5-flash`, while inference rejected it for the account and recommended `gemini-3.8-flash`. Discovery now prefers that recommended model when it is listed, then `gemini-3.0-flash`, before older Flash choices.
+- Editorial-plan validation now fills missing image/video captions from the generated headline, subtext, video title and scene voiceovers. This prevents an otherwise complete Groq plan from being discarded solely because `caption_image` was omitted.
+- This is defensive compatibility; it does not guarantee either provider's quota or model access. Live workflow verification remains required.
