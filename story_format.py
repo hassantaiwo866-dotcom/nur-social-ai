@@ -29,3 +29,21 @@ def validate_story_plan(plan: dict) -> None:
         for field in ("camera_direction", "movement", "visual_asset_type", "transition", "sound_effect"):
             if not str(scene.get(field, "")).strip(): raise ValueError(f"scene {i+1} missing direction: {field}")
     if not any(word in scenes[-1]["voiceover"].lower() for word in ("choose", "take", "try", "pause", "start", "ask", "write", "move", "reach", "notice")): raise ValueError("payoff scene should offer a practical next step")
+
+def complete_missing_captions(plan: dict) -> dict:
+    """Derive safe captions when a model omits optional caption fields."""
+    if not isinstance(plan, dict):
+        return plan
+    graphic = plan.get("graphic") if isinstance(plan.get("graphic"), dict) else {}
+    video = plan.get("video") if isinstance(plan.get("video"), dict) else {}
+    scenes = video.get("scenes") if isinstance(video.get("scenes"), list) else []
+    if not str(plan.get("caption_image", "")).strip():
+        headline = str(graphic.get("headline", "")).strip()
+        subtext = str(graphic.get("subtext", "")).strip()
+        plan["caption_image"] = "\\n\\n".join(part for part in (headline, subtext, "Choose one helpful next step.", "#SelfControl #PersonalGrowth #Nūr") if part)
+    if not str(plan.get("caption_video", "")).strip():
+        title = str(video.get("title", "")).strip()
+        lines = [str(scene.get("voiceover", "")).strip() for scene in scenes if isinstance(scene, dict)]
+        body = " ".join(line for line in lines if line)
+        plan["caption_video"] = "\\n\\n".join(part for part in (title, body, "#SelfControl #Recovery #PersonalGrowth #Nūr") if part)
+    return plan
