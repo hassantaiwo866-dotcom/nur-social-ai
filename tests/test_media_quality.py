@@ -184,4 +184,4 @@ class MotionAccentCompatibilityTests(unittest.TestCase):
         with patch.object(nur_generator, "run_command") as run:
             nur_generator.make_video_segment("frame.jpg", "voice.mp3", "out.mp4", 4.0, scene_index=0, movement="subtle tilt down")
         video_filter = run.call_args.args[0][run.call_args.args[0].index("-vf") + 1]
-        self.assertIn("(0.30+(0.62-0.30)*on/", video_filter)
+        self.assertIn("y='(ih-ih/zoom)*(0.3+(0.62-0.3)*on/", video_filter)
