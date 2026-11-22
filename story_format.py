@@ -30,6 +30,19 @@ def validate_story_plan(plan: dict) -> None:
             if not str(scene.get(field, "")).strip(): raise ValueError(f"scene {i+1} missing direction: {field}")
     if not any(word in scenes[-1]["voiceover"].lower() for word in ("choose", "take", "try", "pause", "start", "ask", "write", "move", "reach", "notice")): raise ValueError("payoff scene should offer a practical next step")
 
+def repair_payoff_action(plan: dict) -> dict:
+    """Append a practical, non-shaming next step when a provider omits one."""
+    video = plan.get("video") if isinstance(plan, dict) else None
+    scenes = video.get("scenes") if isinstance(video, dict) else None
+    if not isinstance(scenes, list) or len(scenes) != 4 or not isinstance(scenes[-1], dict):
+        return plan
+    voiceover = str(scenes[-1].get("voiceover", "")).strip()
+    action_words = ("choose", "take", "try", "pause", "start", "ask", "write", "move", "reach", "notice")
+    if voiceover and not any(word in voiceover.lower() for word in action_words):
+        scenes[-1]["voiceover"] = voiceover.rstrip(".!?") + ". Pause, then choose one small action that supports what matters to you."
+    return plan
+
+
 def complete_missing_captions(plan: dict) -> dict:
     """Derive safe captions when a model omits optional caption fields."""
     if not isinstance(plan, dict):

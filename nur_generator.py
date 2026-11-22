@@ -4,7 +4,7 @@ import json
 import math
 import os
 import random
-from story_format import validate_story_plan, scene_defaults_for_beat, complete_missing_captions
+from story_format import validate_story_plan, scene_defaults_for_beat, complete_missing_captions, repair_payoff_action
 import shutil
 import struct
 import subprocess
@@ -431,6 +431,7 @@ Make the four visual scenes noticeably different, realistic and cinematic. Avoid
         plan["caption_video"] = enforce_wordmark(plan["caption_video"])
         plan["graphic"]["headline"] = enforce_wordmark(plan["graphic"]["headline"])
         plan["graphic"]["subtext"] = enforce_wordmark(plan["graphic"]["subtext"])
+        plan = repair_payoff_action(plan)
         validate_story_plan(plan)
         return plan
 
@@ -570,7 +571,7 @@ def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary"):
     """Return a short travelling Nūr emerald accent line for the scene."""
     y = 1435 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 151
     x = "t*560-190" if int(scene_index) % 2 == 0 else "W-190-t*560"
-    return f"drawbox=x='{x}':y={y}:w=190:h=5:color=0B5D3B@1:t=fill:eval=frame"
+    return f"drawbox=x='{x}':y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
 
 
 def make_video_segment_from_clip(
