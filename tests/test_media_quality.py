@@ -173,3 +173,15 @@ class MotionAccentCompatibilityTests(unittest.TestCase):
             self.assertNotIn("W-190", value)
             self.assertIn("color=0B5D3B@1", value)
 
+
+    def test_still_scene_motion_uses_scene_direction(self):
+        import nur_generator
+        from unittest.mock import patch
+        with patch.object(nur_generator, "run_command") as run:
+            nur_generator.make_video_segment("frame.jpg", "voice.mp3", "out.mp4", 4.0, scene_index=0, movement="gentle pan right")
+        video_filter = run.call_args.args[0][run.call_args.args[0].index("-vf") + 1]
+        self.assertIn("(0.18+(0.68-0.18)*on/", video_filter)
+        with patch.object(nur_generator, "run_command") as run:
+            nur_generator.make_video_segment("frame.jpg", "voice.mp3", "out.mp4", 4.0, scene_index=0, movement="subtle tilt down")
+        video_filter = run.call_args.args[0][run.call_args.args[0].index("-vf") + 1]
+        self.assertIn("y='(ih-ih/zoom)*(0.3+(0.62-0.3)*on/", video_filter)
