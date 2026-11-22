@@ -47,3 +47,11 @@ Unit tests cover model discovery/preference, Commons licence screening and local
 - Added deterministic payoff repair when a generated final scene lacks a practical action. The original voiceover is preserved and a concise, non-shaming next step is appended before validation.
 - Gemini read timeouts remain provider-side failures; the existing Groq/local fallback remains active.
 - Added regression coverage for payoff repair. CI and a real FFmpeg render are required before claiming production success.
+
+
+## 22 November 2026 — run #40 still-image render compatibility
+
+- Run #40 reached the local illustration fallback after Pixabay and Wikimedia were unavailable, then failed in the still-image FFmpeg renderer.
+- The emerald accent used time/width expressions that are not portable across FFmpeg filter builds. Both still-image and stock-video renderers share this accent helper.
+- Replaced moving x expressions with alternating fixed coordinates. This intentionally prioritizes reliable rendering over the accent's animation; the emerald brand element remains visible.
+- External media failures remain recoverable: the local original-illustration fallback is expected to carry production forward. A full workflow run is still required to verify rendering and artifact upload.
