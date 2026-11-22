@@ -30,3 +30,12 @@ Unit tests cover model discovery/preference, Commons licence screening and local
 - The latest production log showed Gemini's catalogue returning `gemini-2.5-flash`, while inference rejected it for the account and recommended `gemini-3.8-flash`. Discovery now prefers that recommended model when it is listed, then `gemini-3.0-flash`, before older Flash choices.
 - Editorial-plan validation now fills missing image/video captions from the generated headline, subtext, video title and scene voiceovers. This prevents an otherwise complete Groq plan from being discarded solely because `caption_image` was omitted.
 - This is defensive compatibility; it does not guarantee either provider's quota or model access. Live workflow verification remains required.
+
+
+## 22 November 2026 — media assembly and provider resilience
+
+- Normalize scene beat labels to the required four-beat sequence based on scene position, while retaining provider scene content. This prevents noncanonical wording from rejecting an otherwise valid plan.
+- Shorten inference timeouts to connect/read bounds so a provider timeout moves promptly to the next provider.
+- Set the moving accent drawbox to evaluate expressions per frame, enabling its time-based horizontal animation.
+- Lower the voice low-pass cutoff to 11 kHz to stay below Nyquist for 24 kHz voice tracks.
+- This addresses the errors observed in production run #37; full media generation still requires a fresh Actions run.
