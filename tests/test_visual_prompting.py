@@ -10,12 +10,15 @@ class VisualPromptingTests(unittest.TestCase):
             camera_direction="close detail shot",
             movement="slow push in",
             beat="RE-HOOK",
+            sequence_direction="Keep the same visual world and reveal a new detail.",
         )
         self.assertIn("woman calmly writes in a notebook", prompt)
         self.assertIn("vertical 9:16", prompt)
         self.assertIn("No text", prompt)
         self.assertIn("close detail shot", prompt)
         self.assertIn("RE-HOOK", prompt)
+        self.assertIn("Story continuity direction:", prompt)
+        self.assertIn("same visual world", prompt)
 
     def test_generation_prompt_rejects_empty_subject(self):
         with self.assertRaisesRegex(ValueError, "visual subject"):
