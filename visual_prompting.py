@@ -29,7 +29,8 @@ STOCK_STOP_WORDS = {
 
 
 def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
-                             movement: str = "", beat: str = "") -> str:
+                             movement: str = "", beat: str = "",
+                             sequence_direction: str = "") -> str:
     """Add quality and composition constraints without changing scene meaning."""
     subject = re.sub(r"\s+", " ", str(scene_prompt or "")).strip()
     if not subject:
