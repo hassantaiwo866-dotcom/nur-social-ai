@@ -196,7 +196,7 @@ def voice_audio_filter(duration):
     duration = max(0.25, float(duration))
     fade_out_start = max(0.08, duration - 0.16)
     return (
-        "highpass=f=75,lowpass=f=12500,"
+        "highpass=f=75,lowpass=f=11000,"
         "acompressor=threshold=-18dB:ratio=2.5:attack=15:release=120:makeup=2,"
         "loudnorm=I=-16:TP=-1.5:LRA=11,"
         "afade=t=in:st=0:d=0.06,"
