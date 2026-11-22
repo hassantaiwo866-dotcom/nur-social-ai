@@ -407,12 +407,15 @@ Make the four visual scenes noticeably different, realistic and cinematic. Avoid
         scenes = plan["video"].get("scenes", [])
         if not isinstance(scenes, list) or len(scenes) != 4:
             raise ValueError("Exactly four video scenes are required.")
-        for scene in scenes:
+        canonical_beats = ("HOOK / OPEN LOOP", "DEVELOPMENT", "RE-HOOK", "PAYOFF")
+        for scene_index, scene in enumerate(scenes):
             if not isinstance(scene, dict):
                 raise ValueError("Each scene must be an object.")
-            for key in ("beat", "voiceover", "on_screen_text", "image_prompt"):
+            for key in ("voiceover", "on_screen_text", "image_prompt"):
                 if not scene.get(key):
                     raise ValueError(f"Scene is missing {key}.")
+            # Normalize beat labels by position so provider wording cannot break the arc.
+            scene["beat"] = canonical_beats[scene_index]
             for field, value in scene_defaults_for_beat(scene).items():
                 scene.setdefault(field, value)
         visual_prompts = {
@@ -477,7 +480,7 @@ Make the four visual scenes noticeably different, realistic and cinematic. Avoid
                         "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
                         "generationConfig": {"temperature": 0.7, "responseMimeType": "application/json"},
                     },
-                    timeout=90,
+                    timeout=(45, 60),
                 )
                 if not response.ok: raise RuntimeError(provider_error(response))
                 raw = response.json()["candidates"][0]["content"]["parts"][0]["text"]
@@ -567,7 +570,7 @@ def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary"):
     """Return a short travelling Nūr emerald accent line for the scene."""
     y = 1435 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 151
     x = "t*560-190" if int(scene_index) % 2 == 0 else "W-190-t*560"
-    return f"drawbox=x='{x}':y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
+    return f"drawbox=x='{x}':y={y}:w=190:h=5:color=0B5D3B@1:t=fill:eval=frame"
 
 
 def make_video_segment_from_clip(
