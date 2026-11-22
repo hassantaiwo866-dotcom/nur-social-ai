@@ -94,3 +94,11 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Its direction alternates by scene, and the motion naturally exits the frame after a short duration; it is not a persistent animated distraction.
 - Both stock-video and still-image renders apply the accent in FFmpeg. Stock footage retains natural colour.
 - Review placement and timing on actual outputs before publication; the automated test validates filter construction, not visual aesthetics.
+
+## Day 2 implementation — scene-directed camera motion
+
+- Still-image scenes now consume the editorial plan's `movement` field instead of always using the same alternating crop drift.
+- Supported restrained presets: slow push in, gentle lateral drift, subtle tilt down, slow pull back, slow forward tracking, gentle pan left and gentle pan right.
+- Unknown movement descriptions safely fall back to an alternating lateral drift.
+- This improves connection between scene direction and motion while retaining the same image provider, FFmpeg renderer and no-cost local pipeline.
+- Tests validate generated FFmpeg crop expressions for two directions. CI is required before considering the implementation verified.

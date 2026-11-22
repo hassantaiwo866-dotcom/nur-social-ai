@@ -608,14 +608,25 @@ def make_video_segment(
     duration,
     zoom=True,
     scene_index=0,
+    movement="slow push in",
 ):
     if zoom:
         total_frames = max(1, int(float(duration) * FPS))
-        if int(scene_index) % 2 == 0:
-            x_start, x_end = 0.18, 0.68
-        else:
-            x_start, x_end = 0.82, 0.32
-        y_start, y_end = (0.30, 0.58) if int(scene_index) < 2 else (0.68, 0.42)
+        movement_key = " ".join(str(movement or "").lower().split())
+        motion_presets = {
+            "slow push in": (0.50, 0.50, 0.50, 0.50),
+            "gentle lateral drift": (0.18, 0.68, 0.50, 0.50),
+            "subtle tilt down": (0.50, 0.50, 0.30, 0.62),
+            "slow pull back": (0.50, 0.50, 0.62, 0.38),
+            "slow forward tracking": (0.50, 0.50, 0.50, 0.50),
+            "gentle pan left": (0.82, 0.32, 0.50, 0.50),
+            "gentle pan right": (0.18, 0.68, 0.50, 0.50),
+        }
+        x_start, x_end, y_start, y_end = motion_presets.get(
+            movement_key,
+            motion_presets["gentle lateral drift"] if int(scene_index) % 2 == 0
+            else motion_presets["gentle pan left"],
+        )
         x_motion = (
             f"(iw-iw/zoom)*({x_start}+"
             f"({x_end}-{x_start})*on/{total_frames})"
@@ -949,6 +960,7 @@ async def run_pipeline():
                 make_video_segment(
                     frame, audio, segment, duration,
                     zoom=True, scene_index=index,
+                    movement=scene.get("movement", "slow push in"),
                 )
 
             segments.append(segment)
