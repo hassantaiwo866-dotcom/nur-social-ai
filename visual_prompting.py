@@ -48,6 +48,7 @@ def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
         GENERATION_STYLE,
         "Scene subject and action:", subject,
         *details,
+        *details,
         "Compose the subject clearly and keep important faces or objects away from overlay-safe margins.",
     ])
 
