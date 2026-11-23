@@ -139,6 +139,7 @@ The following is an inspection of the existing code and documentation, not a cla
 - The generator now attempts Pixabay video only for scenes whose source preference is `stock_video`; other scenes follow their selected still/design path. A missing stock-video clip falls back to the existing still-image chain rather than triggering another stock-video search.
 - Added recurring fictional-character profiles in `video.characters` and stable scene references through `character_ids`. The same visual description is passed into generation prompts for each scene using that character.
 - The production run manifest now records the selected visual direction, character IDs, source preferences and continuity limitations.
+- If a scene assigns a recurring character to the current symbolic `designed_visual` source, normalisation switches that scene to the still-image chain and records the adjustment; the local illustration renderer cannot preserve character identity.
 - Composition and depth choices are included in prompt direction where relevant. Typography treatment is recorded as editorial intent; the renderer does not yet implement the new hyperbold type system.
 - The provider cannot currently consume character reference images. Continuity is **text-guided only**, not guaranteed. The manifest explicitly records this limitation and flags stock scenes where the same performer is unverified.
 
