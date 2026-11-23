@@ -123,3 +123,11 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - The module is local-only and introduces no API calls, credentials, dependencies or generation costs.
 - Unit tests cover the ordered four-beat arc, non-standard scene counts, invalid indices and prompt integration.
 - Automated tests verify deterministic instructions, not whether generated scenes actually look continuous. Inspect the resulting four-scene video before publication.
+
+
+## Day 6 — transition safety verification
+
+- The existing editor supports per-boundary FFmpeg transitions, normalizes the `soft_cut` alias to `fade`, and falls back to `fade` for unsupported transition names.
+- Added tests verifying unsupported names do not reach FFmpeg, the alias is normalized, and segments shorter than the configured transition are rejected before FFmpeg is invoked.
+- This stage hardens existing transition functionality; it does not add new visual transition effects or alter editorial choices.
+- CI verification pending.
