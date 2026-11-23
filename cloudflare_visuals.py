@@ -119,9 +119,9 @@ def generate_klein_image(
     if len(references) > 4:
         raise ValueError("FLUX.2 Klein accepts at most four reference images.")
 
-    data = {"prompt": prompt.strip()[:2048], "width": str(int(width)), "height": str(int(height))}
+    data = {"width": str(int(width)), "height": str(int(height))}
     opened = []
-    files = {}
+    files = [("prompt", (None, prompt.strip()[:2048]))]
     try:
         for index, reference in enumerate(references):
             handle = open(reference, "rb")
@@ -131,13 +131,13 @@ def generate_klein_image(
                     raise ValueError("Each FLUX.2 Klein reference image must be smaller than 512x512.")
                 image_format = (image.format or "PNG").lower()
             mime = "image/jpeg" if image_format in ("jpeg", "jpg") else f"image/{image_format}"
-            files[f"input_image_{index}"] = (Path(reference).name, handle, mime)
+            files.append((f"input_image_{index}", (Path(reference).name, handle, mime)))
 
         response = session.post(
             f"{API_ROOT}/{account_id}{KLEIN_API_URL_SUFFIX}",
             headers={"Authorization": f"Bearer {token}"},
             data=data,
-            files=files or None,
+            files=files,
             timeout=180,
         )
         response.raise_for_status()
