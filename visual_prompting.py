@@ -13,8 +13,37 @@ GENERATION_STYLE = (
     "clear single focal subject, natural light with gentle contrast, authentic emotion, "
     "subtle depth of field, camera-realistic texture, vertical 9:16 composition. "
     "Leave uncluttered negative space for editorial overlays. No text, lettering, "
-    "logos, watermarks, UI, collage, poster design, artificial green tint, or staged stock-photo poses."
+    "logos, watermarks, UI, poster design, artificial green tint, or staged stock-photo poses."
 )
+
+COMPOSITION_DIRECTIONS = {
+    "full_frame": (
+        "Use a clear full-frame cinematic composition with one dominant focal subject."
+    ),
+    "bento_modular": (
+        "Compose with a strong primary focal area and deliberate open zones that can "
+        "support modular bento-style panels in post-production. Do not render text, "
+        "interface controls, borders or a collage into the image."
+    ),
+    "hybrid_editorial": (
+        "Keep the cinematic scene dominant while leaving intentional space for a "
+        "restrained editorial module or graphic layer to be added in post-production."
+    ),
+}
+
+DEPTH_DIRECTIONS = {
+    "natural_cinematic": (
+        "Keep materials, lighting and physical details natural, restrained and grounded."
+    ),
+    "glass_tactile": (
+        "If it supports the subject, include one restrained tactile translucent or "
+        "glass-like element with believable reflections; avoid floating interface clutter."
+    ),
+    "3d_surreal": (
+        "If it supports the subject, use one coherent sculptural 3D visual metaphor "
+        "integrated into the real environment, with believable light and perspective."
+    ),
+}
 
 STOCK_STOP_WORDS = {
     "cinematic", "realistic", "documentary", "footage", "photo", "photograph",
@@ -28,10 +57,18 @@ STOCK_STOP_WORDS = {
 }
 
 
-def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
-                             movement: str = "", beat: str = "",
-                             sequence_direction: str = "") -> str:
-    """Add quality and composition constraints without changing scene meaning."""
+def compose_generation_prompt(
+    scene_prompt: str,
+    *,
+    camera_direction: str = "",
+    movement: str = "",
+    beat: str = "",
+    sequence_direction: str = "",
+    character_direction: str = "",
+    composition: str = "full_frame",
+    depth_treatment: str = "natural_cinematic",
+) -> str:
+    """Add cinematic, scene, composition and text-guided character direction."""
     subject = re.sub(r"\s+", " ", str(scene_prompt or "")).strip()
     if not subject:
         raise ValueError("Scene prompt must describe a visual subject.")
@@ -39,7 +76,10 @@ def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
     motion = " ".join(str(movement or "").split())
     story_beat = " ".join(str(beat or "").split())
     sequence = " ".join(str(sequence_direction or "").split())
-    details = []
+    character = " ".join(str(character_direction or "").split())
+    composition_hint = COMPOSITION_DIRECTIONS.get(str(composition), COMPOSITION_DIRECTIONS["full_frame"])
+    depth_hint = DEPTH_DIRECTIONS.get(str(depth_treatment), DEPTH_DIRECTIONS["natural_cinematic"])
+    details = [composition_hint, depth_hint]
     if story_beat:
         details.append(f"Story beat: {story_beat}.")
     if direction:
@@ -48,6 +88,8 @@ def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
         details.append(f"Implied camera movement: {motion}.")
     if sequence:
         details.append(f"Story continuity direction: {sequence}")
+    if character:
+        details.append(f"Character continuity direction: {character}")
     return " ".join([
         GENERATION_STYLE,
         "Scene subject and action:", subject,

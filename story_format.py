@@ -1,34 +1,84 @@
 """Story format and visual direction rules for Nūr short-form content."""
 from __future__ import annotations
 
+from visual_direction import normalise_video_visual_direction
+
 STORY_BEATS = ("HOOK / OPEN LOOP", "DEVELOPMENT", "RE-HOOK", "PAYOFF")
 VISUAL_STYLES = ("cinematic_documentary", "tactile_editorial_collage", "hybrid_documentary_collage")
 
+
 def scene_defaults_for_beat(scene: dict) -> dict:
     beat = str(scene.get("beat", "")).upper()
-    defaults = {"camera_direction": "Natural cinematic framing; preserve visual clarity.", "movement": "Subtle camera movement only.", "visual_asset_type": "stock_footage_or_photograph", "transition": "soft_cut", "sound_effect": "none"}
-    if "HOOK" in beat:
-        defaults.update(camera_direction="Immediate visual detail or human moment; no establishing logo shot.", movement="Purposeful, restrained push-in or movement that earns attention.")
-    elif "RE-HOOK" in beat:
-        defaults.update(camera_direction="Change framing or subject detail to renew visual interest.", movement="Distinct but restrained movement; avoid repeating the previous shot.")
+    defaults = {
+        "camera_direction": "Natural cinematic framing; preserve visual clarity.",
+        "movement": "Subtle camera movement only.",
+        "visual_asset_type": "stock_footage_or_photograph",
+        "transition": "soft_cut",
+        "sound_effect": "none",
+        "visual_source": "generated_still",
+        "composition": "bento_modular",
+        "depth_treatment": "glass_tactile",
+        "typography_treatment": "editorial_minimal",
+    }
+    if "RE-HOOK" in beat:
+        defaults.update(
+            camera_direction="Change framing or subject detail to renew visual interest.",
+            movement="Distinct but restrained movement; avoid repeating the previous shot.",
+            visual_source="stock_video",
+            composition="hybrid_editorial",
+            depth_treatment="natural_cinematic",
+            typography_treatment="hyperbold_brutalist",
+        )
+    elif "HOOK" in beat:
+        defaults.update(
+            camera_direction="Immediate visual detail or human moment; no establishing logo shot.",
+            movement="Purposeful, restrained push-in or movement that earns attention.",
+            visual_source="stock_video",
+            composition="full_frame",
+            depth_treatment="natural_cinematic",
+            typography_treatment="hyperbold_brutalist",
+        )
     elif "PAYOFF" in beat:
-        defaults.update(camera_direction="Clear, grounded composition supporting the practical takeaway.", movement="Slow, stable movement or deliberate hold.")
+        defaults.update(
+            camera_direction="Clear, grounded composition supporting the practical takeaway.",
+            movement="Slow, stable movement or deliberate hold.",
+            visual_source="designed_visual",
+            composition="full_frame",
+            depth_treatment="natural_cinematic",
+            typography_treatment="editorial_minimal",
+        )
     return defaults
+
 
 def validate_story_plan(plan: dict) -> None:
     video = plan.get("video")
-    if not isinstance(video, dict): raise ValueError("video must be an object")
-    if video.get("visual_style", "cinematic_documentary") not in VISUAL_STYLES: raise ValueError("unknown visual style")
+    if not isinstance(video, dict):
+        raise ValueError("video must be an object")
+    if video.get("visual_style", "cinematic_documentary") not in VISUAL_STYLES:
+        raise ValueError("unknown visual style")
+    normalise_video_visual_direction(video)
     scenes = video.get("scenes")
-    if not isinstance(scenes, list) or len(scenes) != 4: raise ValueError("story arc requires exactly four scenes")
+    if not isinstance(scenes, list) or len(scenes) != 4:
+        raise ValueError("story arc requires exactly four scenes")
     for i, scene in enumerate(scenes):
         beat = str(scene.get("beat", "")).upper()
-        if STORY_BEATS[i].split(" / ")[0] not in beat: raise ValueError(f"scene {i+1} must represent {STORY_BEATS[i]}")
+        if STORY_BEATS[i].split(" / ")[0] not in beat:
+            raise ValueError(f"scene {i+1} must represent {STORY_BEATS[i]}")
         for field in ("voiceover", "on_screen_text", "image_prompt"):
-            if not str(scene.get(field, "")).strip(): raise ValueError(f"scene {i+1} missing {field}")
-        for field in ("camera_direction", "movement", "visual_asset_type", "transition", "sound_effect"):
-            if not str(scene.get(field, "")).strip(): raise ValueError(f"scene {i+1} missing direction: {field}")
-    if not any(word in scenes[-1]["voiceover"].lower() for word in ("choose", "take", "try", "pause", "start", "ask", "write", "move", "reach", "notice")): raise ValueError("payoff scene should offer a practical next step")
+            if not str(scene.get(field, "")).strip():
+                raise ValueError(f"scene {i+1} missing {field}")
+        for field in (
+            "camera_direction", "movement", "visual_asset_type", "transition",
+            "sound_effect", "visual_source", "composition", "depth_treatment",
+            "typography_treatment",
+        ):
+            if not str(scene.get(field, "")).strip():
+                raise ValueError(f"scene {i+1} missing direction: {field}")
+    if not any(word in scenes[-1]["voiceover"].lower() for word in (
+        "choose", "take", "try", "pause", "start", "ask", "write", "move", "reach", "notice"
+    )):
+        raise ValueError("payoff scene should offer a practical next step")
+
 
 def repair_payoff_action(plan: dict) -> dict:
     """Append a practical, non-shaming next step when a provider omits one."""

@@ -24,6 +24,21 @@ class VisualPromptingTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "visual subject"):
             compose_generation_prompt("  ")
 
+    def test_generation_prompt_adds_modular_depth_and_character_direction(self):
+        prompt = compose_generation_prompt(
+            "A fictional adult writes in a notebook beside a window",
+            composition="bento_modular",
+            depth_treatment="glass_tactile",
+            character_direction=(
+                "TEXT-GUIDED CHARACTER CONTINUITY: main_person has short dark hair "
+                "and a navy jacket. Preserve the same identity."
+            ),
+        )
+        self.assertIn("modular bento-style panels", prompt)
+        self.assertIn("translucent or glass-like element", prompt)
+        self.assertIn("short dark hair", prompt)
+        self.assertIn("No text", prompt)
+
     def test_stock_query_removes_style_filler_and_limits_length(self):
         query = build_stock_search_query(
             "Premium cinematic documentary photograph of a person writing in a notebook, "

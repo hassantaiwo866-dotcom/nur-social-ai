@@ -36,6 +36,13 @@ class StoryFormatTests(unittest.TestCase):
 
     def test_valid_story_arc(self):
         validate_story_plan(self.plan()); self.assertEqual(len(VISUAL_STYLES),3)
+
+    def test_re_hook_receives_distinct_visual_defaults(self):
+        from story_format import scene_defaults_for_beat
+        defaults = scene_defaults_for_beat({"beat": "RE-HOOK"})
+        self.assertEqual(defaults["composition"], "hybrid_editorial")
+        self.assertEqual(defaults["visual_source"], "stock_video")
+        self.assertIn("renew visual interest", defaults["camera_direction"])
     def test_wrong_beat_rejected(self):
         plan=self.plan(); plan["video"]["scenes"][2]["beat"]="MIDPOINT"
         with self.assertRaisesRegex(ValueError,"scene 3"): validate_story_plan(plan)

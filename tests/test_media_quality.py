@@ -142,9 +142,6 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("overlay=(W-w)/2:(H-h)/2", graph)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_collage_style_adds_tactile_paper_caption(self):
         from media_quality import render_scene_frame, render_scene_overlay
         with tempfile.TemporaryDirectory() as folder:
@@ -160,6 +157,7 @@ if __name__ == "__main__":
             with Image.open(overlay) as image:
                 self.assertEqual(image.mode, "RGBA")
                 self.assertEqual(image.size, (1080, 1920))
+
 
 
 class MotionAccentCompatibilityTests(unittest.TestCase):
@@ -185,3 +183,7 @@ class MotionAccentCompatibilityTests(unittest.TestCase):
             nur_generator.make_video_segment("frame.jpg", "voice.mp3", "out.mp4", 4.0, scene_index=0, movement="subtle tilt down")
         video_filter = run.call_args.args[0][run.call_args.args[0].index("-vf") + 1]
         self.assertIn("y='(ih-ih/zoom)*(0.3+(0.62-0.3)*on/", video_filter)
+
+
+if __name__ == "__main__":
+    unittest.main()

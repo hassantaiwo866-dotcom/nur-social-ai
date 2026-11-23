@@ -1,6 +1,6 @@
 # Nūr Media — cinematic visual strategy
 
-**Status:** Approved direction; implementation work not yet started  
+**Status:** Approved direction; Stage 1 implemented on the feature branch (pending CI and merge); full redesign remains in progress  
 **Scope:** Social video and supporting editorial graphics produced by Nūr Media Production
 
 ## 1. Creative direction
@@ -133,27 +133,34 @@ The following is an inspection of the existing code and documentation, not a cla
 - `media_quality.py` provides vertical scene frames and overlays, tactile collage caption treatments, photo finishing, FFmpeg transitions and narration processing.
 - `nur_generator.py` renders 9:16 scenes and a 4:5 supporting poster. Production manifests, editorial quality checks and a human-review checklist are also present.
 
-### Gaps against the approved direction
-- **Cinematic identity:** cinematic documentary is already the default prompt style, but there is no complete visual director that selects a treatment per scene from the new combined grammar.
-- **Balanced sources:** when `PIXABAY_API_KEY` is present, the scene loop attempts Pixabay video first for every scene. The current code does not yet make a deliberate per-scene stock-versus-generated-versus-designed choice.
-- **Character continuity:** `visual_continuity.py` provides textual sequence guidance only. It does not create character sheets, store character reference assets or pass reference images through the current Gemini image adapter. Pixabay search cannot guarantee a recurring performer.
-- **Bento / modular composition:** no dedicated bento-grid scene composition system was found in the inspected renderer.
-- **Glassmorphism / 3D:** no dedicated glass or 3D scene-rendering implementation was found in the inspected renderer.
-- **Brutalist / hyperbold typography:** current scene typography uses a DejaVu serif caption treatment and a small masthead/beat label. A distinct hyperbold editorial type system is not yet implemented.
+### Stage 1 implementation (feature branch; pending CI and merge)
+- Added `visual_direction.py` as a provider-independent schema for per-scene source, composition, depth and typography choices.
+- Added a backward-compatible four-scene default mix: stock video, generated still, stock video, designed visual. Explicit editorial choices override these defaults.
+- The generator now attempts Pixabay video only for scenes whose source preference is `stock_video`; other scenes follow their selected still/design path. A missing stock-video clip falls back to the existing still-image chain rather than triggering another stock-video search.
+- Added recurring fictional-character profiles in `video.characters` and stable scene references through `character_ids`. The same visual description is passed into generation prompts for each scene using that character.
+- The production run manifest now records the selected visual direction, character IDs, source preferences and continuity limitations.
+- If a scene assigns a recurring character to the current symbolic `designed_visual` source, normalisation switches that scene to the still-image chain and records the adjustment; the local illustration renderer cannot preserve character identity.
+- Composition and depth choices are included in prompt direction where relevant. Typography treatment is recorded as editorial intent; the renderer does not yet implement the new hyperbold type system.
+- The provider cannot currently consume character reference images. Continuity is **text-guided only**, not guaranteed. The manifest explicitly records this limitation and flags stock scenes where the same performer is unverified.
+
+### Remaining gaps against the approved direction
+- **Bento / modular composition:** the schema and prompt guidance now support the choice, but the renderer does not yet build animated bento panels or modular layouts.
+- **Glassmorphism / 3D:** the schema and prompt hints support selective depth treatments; there is no dedicated 3D or glass scene-rendering implementation yet.
+- **Brutalist / hyperbold typography:** the scene plan now selects a typography treatment, but the current renderer still uses its existing caption and masthead treatment.
+- **Reference-based character continuity:** no provider reference-image input, character-sheet storage or automated identity comparison is integrated. Text prompts alone cannot guarantee the same face.
 - **Motion accent:** the current `motion_accent_filter` returns fixed drawbox coordinates. It does not implement the travelling animated accent described in parts of the visual-quality documentation. The documentation and implementation should be reconciled before relying on that claim.
 - **Rendered proof:** unit tests validate mechanics, not the artistic quality or continuity of a complete generated video. A fresh output still needs human inspection.
 
 ### Test/documentation observation
-The inspected `tests/test_media_quality.py` contains a collage-style test after the module's `if __name__ == "__main__": unittest.main()` block, indented inside that block rather than inside the test class. Under normal unittest discovery that test is not discovered. This should be corrected when the renderer is next changed; it is not changed by this documentation-only update.
+The previously misplaced collage-rendering test in `tests/test_media_quality.py` has been moved into `MediaQualityTests`, before the module's direct-run guard, so normal unittest discovery can execute it. The CI compile step now explicitly includes `story_format.py`, `visual_direction.py`, `visual_prompting.py` and the new visual-direction tests.
 
-## 9. Implementation sequence (proposed; not yet implemented)
+## 9. Implementation sequence
 
-1. **Visual direction schema:** add explicit per-scene source preference, composition treatment, typography treatment, depth treatment and character reference ID with safe defaults for older plans.
-2. **Character continuity foundation:** add a character brief/reference manifest and provider-capability checks. Do not promise reference-image continuity until the selected provider can accept and use reference assets.
-3. **Balanced asset selection:** make source choice editorial and per-scene, with explicit fallback rules and provenance preserved. Avoid stock-first behaviour for every scene.
-4. **Composition and typography prototypes:** implement one controlled bento composition and one hyperbold typography treatment, then selective glass/tactile depth elements.
-5. **Cinematic scene rendering:** integrate treatments without sacrificing legibility, source integrity, restrained motion or the existing 9:16 output.
-6. **Tests and visual QA:** cover schema compatibility, source selection, continuity metadata, fallback behaviour, rendering and mobile-safe text. Inspect a real four-scene output before broad rollout.
+1. <u>Stage 1 — per-scene visual direction and continuity metadata:</u> implemented on the current feature branch; CI and merge are pending.
+2. **Reference-based character continuity:** add provider reference-image support only after a provider capability and cost review. Until then, text-guided continuity remains explicitly limited.
+3. **Composition and typography prototypes:** implement one controlled bento composition and one hyperbold typography treatment, then selective glass/tactile depth elements.
+4. **Cinematic scene rendering:** integrate treatments without sacrificing legibility, source integrity, restrained motion or the existing 9:16 output.
+5. **Tests and visual QA:** cover schema compatibility, source selection, continuity metadata, fallback behaviour, rendering and mobile-safe text. Inspect a real four-scene output before broad rollout.
 
 Do not combine this work with a provider migration or enable Agnes/other paid APIs. Provider integration and pricing verification are separate decisions.
 

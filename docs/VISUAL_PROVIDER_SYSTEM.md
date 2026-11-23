@@ -10,9 +10,25 @@ Nūr's visual pipeline must use topic-matched, high-quality visual material rath
 - **Nūr motion graphics**: generated locally with Pillow/FFmpeg for explanatory sequences and branded transitions; these are not presented as photography or footage.
 - **Agnes AI (under investigation; not currently integrated)**: Agnes publishes an OpenAI-compatible image/video API. Its current public materials identify `agnes-image-2.5-flash` and `agnes-video-2.5-flash`; an independent free-tier tracker reports both as free, while Agnes's own model reference explicitly describes the video Flash price as a limited-time `$0/sec` promotion. Do not treat this as a guaranteed daily allowance. Confirm the current model price and free-key access in the Agnes Platform console before sending production requests.
 
+## Per-scene source selection
+
+The editorial plan now chooses a preferred visual source for each scene:
+
+- `stock_video`: attempt a licensed Pixabay video clip for that scene only.
+- `generated_still`: prefer the explicitly enabled image-generation path; if unavailable, use the existing Wikimedia/local fallback chain. Do not silently substitute a Pixabay stock photograph.
+- `stock_photo`: use the licensed stock-photo path; do not call image-generation providers for this preference.
+- `designed_visual`: create an original local Nūr illustration without calling an external visual provider.
+
+Older plans receive a balanced four-scene default mix of stock video, generated still, stock video and designed visual. Explicit scene choices override these defaults. If a requested stock-video clip is unavailable, the scene falls back to the still-image chain; it does not repeat the stock-video search.
+
+The source preference and actual asset provenance are different facts. The production manifest records editorial direction, while the asset attribution registry records the provider and media type actually used. A generated-still preference may still fall back to Wikimedia or a local illustration if no generation provider is enabled.
+
+If a scene assigns a recurring character to `designed_visual`, the normaliser changes the preference to `generated_still` and records the adjustment. The current local illustration is symbolic and does not reproduce character identity.
+
 ## Quality and safety rules
-- Prefer real, relevant portrait footage for story-driven video when a suitable clip is available.
-- Prefer AI-generated images when the desired scene is unavailable in stock libraries or would otherwise be visually incoherent.
+- Select the source per scene according to the story; stock footage is neither a blanket default nor prohibited.
+- Prefer real, relevant footage when it is the most truthful and useful way to show the scene.
+- Prefer generated or designed visuals when a coherent fictional scene, specific visual metaphor or original composition is more appropriate.
 - Never label an AI image as a photograph captured by a human.
 - Keep source, creator, asset ID, licence and source page in the media manifest where supplied.
 - Reject undersized, invalid or unplayable assets.
@@ -20,11 +36,19 @@ Nūr's visual pipeline must use topic-matched, high-quality visual material rath
 - Missing optional keys must not break the production workflow. They must not silently trigger a paid generation request.
 - No public publishing is performed by this provider layer.
 
+## Character continuity limitations
+
+Recurring fictional characters may be declared in `video.characters` and referenced by stable IDs in each scene's `character_ids`. Their same visual description is reused in prompts, and the production run manifest records the character references.
+
+This is **text-guided continuity only**. Current visual providers do not receive character reference images through this pipeline, so matching identity across generated scenes is not guaranteed. Separate stock clips cannot guarantee the same performer. The manifest records this limitation and flags scenes where a recurring character is assigned to stock footage or photography. Do not describe this capability as reference-based or guaranteed until a provider adapter and rendered tests support it.
+
 ## API cost note
 Gemini image generation has no free tier in the current published Gemini Developer API pricing. The 1K Gemini 3.1 Flash Lite Image output is listed at approximately USD 0.0336 per image, excluding input and any additional processing. Confirm current pricing and billing before enabling it. See https://ai.google.dev/gemini-api/docs/pricing.
 
 ## Current integration status
-The provider adapters are implemented and unit-tested independently. The next integration step is to connect provider selection to the editorial poster and scene renderer, then inspect actual outputs on a phone. Adapter tests do not establish that the user's API credentials, account billing, stock search results or production assets are working.
+Per-scene source preferences are now connected to the scene-generation pipeline on the cinematic direction feature branch. Provider adapters remain independently tested, and a real end-to-end rendered output has not yet been reviewed for this change. Adapter tests do not establish that the user's API credentials, account billing, stock search results or production assets are working.
+
+Composition, depth and typography preferences are recorded per scene. Prompt direction can guide composition and depth, but dedicated animated bento rendering, glass/3D compositing and the hyperbold typography renderer remain future implementation work. The current renderer does not yet fully realise those treatments.
 
 
 ## Cloudflare Workers AI — free-plan image generation

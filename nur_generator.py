@@ -22,6 +22,11 @@ from visual_providers import generate_gemini_image, search_pixabay_photo, search
 from cloudflare_visuals import generate_image as generate_cloudflare_image
 from visual_prompting import compose_generation_prompt, build_stock_search_query
 from visual_continuity import scene_sequence_direction
+from visual_direction import (
+    build_character_direction,
+    build_visual_direction_manifest,
+    normalise_video_visual_direction,
+)
 from storytelling import build_audience_connection_direction
 from editorial_quality import evaluate_editorial_plan
 from human_review import build_human_review_checklist
@@ -329,11 +334,18 @@ def generate_photo(prompt,width,height,destination,scene=None):
         movement=scene.get("movement", ""),
         beat=scene.get("beat", ""),
         sequence_direction=scene.get("sequence_direction", ""),
+        character_direction=scene.get("character_direction", ""),
+        composition=scene.get("composition", "full_frame"),
+        depth_treatment=scene.get("depth_treatment", "natural_cinematic"),
     )
+    visual_source = scene.get("visual_source") if scene else None
+    if visual_source == "designed_visual":
+        print("Creating an original Nūr-designed visual...")
+        return enhance_photo(_generate_local_illustration(prompt, width, height, destination))
     stock_query = build_stock_search_query(
         prompt, narration=scene.get("voiceover", "")
     )
-    if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
+    if visual_source != "stock_photo" and os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
         try:
             print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
             path = generate_cloudflare_image(generation_prompt, destination)
@@ -348,7 +360,8 @@ def generate_photo(prompt,width,height,destination,scene=None):
             return enhance_photo(path)
         except Exception as exc:
             print(f"Cloudflare image generation unavailable; using existing fallbacks: {type(exc).__name__}: {str(exc)[:240]}")
-    if (os.getenv("NUR_FREE_ONLY", "true").strip().lower() in ("0", "false", "no")
+    if (visual_source != "stock_photo"
+            and os.getenv("NUR_FREE_ONLY", "true").strip().lower() in ("0", "false", "no")
             and os.getenv("ENABLE_GEMINI_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes")):
         try:
             print("Generating an original scene image with Gemini (paid mode explicitly enabled)...")
@@ -356,7 +369,7 @@ def generate_photo(prompt,width,height,destination,scene=None):
             return enhance_photo(path)
         except Exception as exc:
             print(f"Gemini image generation unavailable: {type(exc).__name__}: {str(exc)[:240]}")
-    if os.getenv("PIXABAY_API_KEY", "").strip():
+    if visual_source != "generated_still" and os.getenv("PIXABAY_API_KEY", "").strip():
         try:
             print("Searching Pixabay for a licensed editorial photograph...")
             path = search_pixabay_photo(
@@ -407,10 +420,14 @@ Avoid these recent topics: {recent}
 Return a JSON object with topic_slug, pillar_label, graphic, caption_image, video and caption_video.
 graphic must contain theme, headline, subtext and photo_prompt.
 video must contain a title and exactly four scenes.
-Each scene must contain beat, voiceover, on_screen_text, image_prompt, camera_direction, movement, visual_asset_type, transition and sound_effect.
+Each scene must contain beat, voiceover, on_screen_text, image_prompt, camera_direction, movement, visual_asset_type, transition, sound_effect, visual_source, composition, depth_treatment, typography_treatment and character_ids.
+Use visual_source values stock_video, generated_still, stock_photo or designed_visual. Choose deliberately per scene rather than using stock video for every scene.
+Use composition values full_frame, bento_modular or hybrid_editorial. Use depth_treatment values natural_cinematic, glass_tactile or 3d_surreal. Use typography_treatment values editorial_minimal or hyperbold_brutalist.
+video.characters must be a list. Each recurring fictional character has one stable id and a consistent visual_description; scenes refer to that id in character_ids. Reuse the same character id and description in every scene where that character appears. Do not invent a recurring character unless it improves the story.
+Prefer not to use separate stock clips when the same recurring performer must be preserved; stock footage cannot guarantee performer identity across clips.
 Use Hook/Open Loop in scene 1, Development in scene 2, Re-hook in scene 3, and Payoff in scene 4.
 Add video.visual_style selected from cinematic_documentary, tactile_editorial_collage, or hybrid_documentary_collage.
-Default to calm premium cinematic documentary with restrained tactile accents. Scene prompts must describe actual footage/image content, not graphics.
+Default to calm premium cinematic documentary with restrained tactile accents. Scene prompts must describe actual scene content, not text, logos or app UI.
 Make the four visual scenes noticeably different, realistic and cinematic. Avoid generic gradients, empty green backgrounds and abstract shapes.
 {build_audience_connection_direction()}
 """
@@ -445,6 +462,7 @@ Make the four visual scenes noticeably different, realistic and cinematic. Avoid
             scene["beat"] = canonical_beats[scene_index]
             for field, value in scene_defaults_for_beat(scene).items():
                 scene.setdefault(field, value)
+        normalise_video_visual_direction(plan["video"])
         visual_prompts = {
             " ".join(str(scene["image_prompt"]).lower().split())
             for scene in scenes
@@ -909,6 +927,8 @@ async def run_pipeline():
     print("1. Creating editorial plan...")
 
     plan = generate_editorial_plan(brand, history)
+    run_manifest["visual_direction"] = build_visual_direction_manifest(plan["video"])
+    save_run_manifest(manifest_path, run_manifest)
     editorial_quality = evaluate_editorial_plan(plan)
     update_stage(run_manifest, "editorial_plan", "completed", "Editorial plan created and scored")
     save_run_manifest(manifest_path, run_manifest)
@@ -968,7 +988,8 @@ async def run_pipeline():
             print(f"Scene {index + 1}/4")
 
             clip = None
-            if os.getenv("PIXABAY_API_KEY", "").strip():
+            visual_source = scene.get("visual_source", "stock_video")
+            if visual_source == "stock_video" and os.getenv("PIXABAY_API_KEY", "").strip():
                 try:
                     print("Searching for real portrait video footage...")
                     clip = search_pixabay_video(
@@ -993,6 +1014,13 @@ async def run_pipeline():
                 scene_with_continuity["sequence_direction"] = scene_sequence_direction(
                     index, len(plan["video"]["scenes"])
                 )
+                scene_with_continuity["character_direction"] = build_character_direction(
+                    scene, plan["video"].get("characters", [])
+                )
+                if visual_source == "stock_video":
+                    # A missing stock clip falls back to the still-image chain;
+                    # it does not trigger another stock-video search or a paid provider.
+                    scene_with_continuity["visual_source"] = "generated_still"
                 photo = generate_photo(
                     scene["image_prompt"],
                     WIDTH,
