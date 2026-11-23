@@ -22,6 +22,7 @@ from cloudflare_visuals import generate_image as generate_cloudflare_image
 from visual_prompting import compose_generation_prompt, build_stock_search_query
 from visual_continuity import scene_sequence_direction
 from storytelling import build_audience_connection_direction
+from editorial_quality import evaluate_editorial_plan
 
 
 ROOT = Path(__file__).resolve().parent
@@ -895,6 +896,12 @@ async def run_pipeline():
     print("1. Creating editorial plan...")
 
     plan = generate_editorial_plan(brand, history)
+    editorial_quality = evaluate_editorial_plan(plan)
+    print(f"Editorial quality: {editorial_quality[\"score\"]}/{editorial_quality[\"max_score\"]} ({editorial_quality[\"checks_passed\"]}/{editorial_quality[\"checks_total\"]} checks)")
+    if editorial_quality["warnings"]:
+        print("Editorial warnings:")
+        for warning in editorial_quality["warnings"]:
+            print(f"- {warning}")
     ASSET_ATTRIBUTIONS.clear()
     _USED_ASSET_IDS.clear()
 
@@ -1045,6 +1052,7 @@ async def run_pipeline():
                 "image_caption": plan["caption_image"],
                 "video_caption": plan["caption_video"],
                 "assets": ASSET_ATTRIBUTIONS,
+                "editorial_quality": editorial_quality,
                 "qa": qa,
             },
         )
