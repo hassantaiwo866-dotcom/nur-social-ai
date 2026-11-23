@@ -9,6 +9,7 @@ import shutil
 import struct
 import subprocess
 import tempfile
+import time
 import urllib.parse
 import wave
 from pathlib import Path
@@ -883,7 +884,7 @@ def run_qa(image_path, video_path, plan):
 
 
 async def run_pipeline():
-    run_id = f"run_{int(__import__(\"time\").time())}"
+    run_id = f"run_{int(time.time())}"
     run_manifest = new_run_manifest(run_id)
     manifest_path = OUTPUT / "production_run.json"
     save_run_manifest(manifest_path, run_manifest)
@@ -909,7 +910,7 @@ async def run_pipeline():
 
     plan = generate_editorial_plan(brand, history)
     editorial_quality = evaluate_editorial_plan(plan)
-    update_stage(run_manifest, "editorial_plan", "completed", f"Editorial score {editorial_quality[\"score\"]}/{editorial_quality[\"max_score\"]}")
+    update_stage(run_manifest, "editorial_plan", "completed", "Editorial plan created and scored")
     save_run_manifest(manifest_path, run_manifest)
     quality_score = editorial_quality["score"]
     quality_max = editorial_quality["max_score"]
@@ -942,6 +943,8 @@ async def run_pipeline():
 
         update_stage(run_manifest, "image_generation", "completed")
         save_run_manifest(manifest_path, run_manifest)
+        update_stage(run_manifest, "graphic_render", "started")
+        save_run_manifest(manifest_path, run_manifest)
         print("3. Building editorial graphic...")
 
         image_path = OUTPUT / "nur_post.png"
@@ -952,7 +955,9 @@ async def run_pipeline():
             graphic_photo,
         )
 
-        update_stage(run_manifest, "graphic_render", "started")
+        update_stage(run_manifest, "graphic_render", "completed")
+        save_run_manifest(manifest_path, run_manifest)
+        update_stage(run_manifest, "scene_rendering", "started")
         save_run_manifest(manifest_path, run_manifest)
         print("4. Producing cinematic scenes...")
 
@@ -1060,6 +1065,8 @@ async def run_pipeline():
         segments.append(end_segment)
 
         update_stage(run_manifest, "end_card", "started")
+        save_run_manifest(manifest_path, run_manifest)
+        update_stage(run_manifest, "end_card", "completed")
         save_run_manifest(manifest_path, run_manifest)
         print("6. Joining scenes with restrained crossfades...")
         video_path = OUTPUT / "nur_reel.mp4"
