@@ -33,3 +33,10 @@ Generated media is written to `output/`. Actions uploads it as an artifact and, 
 Commons metadata can be incomplete or unreliable. The pipeline accepts only identified CC0, public-domain, CC BY or CC BY-SA licences with a licence URL and skips declared restrictions. Attribution is recorded, but humans must inspect the original file page and conditions. If Commons cannot provide a suitable image, the pipeline creates original Nūr-branded artwork locally; it is explicitly labelled as an illustration, not a photograph.
 
 See [visual provider system](docs/VISUAL_PROVIDER_SYSTEM.md), [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md), [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md) and [private Telegram review setup](docs/TELEGRAM_PRIVATE_REVIEW.md).
+
+
+## Day 4 — private temporary image handoff
+
+The Day 4 feature branch adds an optional Cloudflare R2 helper for handing generated image references to Agnes without making the bucket public or placing assets in Git. The helper is disabled by default, caps each image at 10 MiB, creates a short-lived signed HTTPS GET URL (10 minutes by default; 15-minute hard maximum), and attempts to delete the object when the calling context exits.
+
+This is not active in production yet. It requires a private R2 bucket, a bucket-scoped R2 S3 API token, and the following GitHub Actions secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`. Enable only after confirming current R2 free-tier limits, configuring a one-day lifecycle deletion rule for `nur-media-temp/`, and explicitly setting `R2_FREE_TIER_CONFIRMED=yes` and `ENABLE_R2_TEMP_STORAGE=true`. Do not create a public bucket. The helper is unit-tested with mocked R2 calls; no live bucket or upload has been created.
