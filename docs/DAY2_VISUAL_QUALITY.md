@@ -131,3 +131,11 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Added tests verifying unsupported names do not reach FFmpeg, the alias is normalized, and segments shorter than the configured transition are rejected before FFmpeg is invoked.
 - This stage hardens existing transition functionality; it does not add new visual transition effects or alter editorial choices.
 - CI verification pending.
+
+
+## Day 7 — voiceover filter duration safety
+
+- Voiceover finishing already includes high/low-pass filtering, compression, loudness normalization and short fades.
+- Added finite-duration validation to prevent invalid FFmpeg filter values from NaN or infinity. Negative/very short durations retain a safe minimum of 0.25 seconds.
+- Regression tests cover negative and non-finite durations.
+- No additional audio provider, music service, dependency or cost was introduced. Automated verification pending.

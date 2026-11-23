@@ -233,3 +233,18 @@ class TransitionSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "too short"):
                 join_video_segments(paths, Path(folder) / "out.mp4", transition=0.35)
         run.assert_not_called()
+
+
+
+class VoiceAudioDurationSafetyTests(unittest.TestCase):
+    def test_negative_duration_is_clamped_to_minimum(self):
+        from media_quality import voice_audio_filter
+        filters = voice_audio_filter(-3.0)
+        self.assertIn("afade=t=out:st=0.090:d=0.15", filters)
+
+    def test_non_finite_duration_is_rejected(self):
+        from media_quality import voice_audio_filter
+        for duration in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(duration=duration):
+                with self.assertRaisesRegex(ValueError, "finite"):
+                    voice_audio_filter(duration)
