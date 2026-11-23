@@ -23,6 +23,8 @@ Older plans receive a balanced four-scene default mix of stock video, generated 
 
 The source preference and actual asset provenance are different facts. The production manifest records editorial direction, while the asset attribution registry records the provider and media type actually used. A generated-still preference may still fall back to Wikimedia or a local illustration if no generation provider is enabled.
 
+If a scene assigns a recurring character to `designed_visual`, the normaliser changes the preference to `generated_still` and records the adjustment. The current local illustration is symbolic and does not reproduce character identity.
+
 ## Quality and safety rules
 - Select the source per scene according to the story; stock footage is neither a blanket default nor prohibited.
 - Prefer real, relevant footage when it is the most truthful and useful way to show the scene.
