@@ -325,7 +325,9 @@ def generate_photo(prompt,width,height,destination,scene=None):
         beat=scene.get("beat", ""),
         sequence_direction=scene.get("sequence_direction", ""),
     )
-    stock_query = build_stock_search_query(prompt)
+    stock_query = build_stock_search_query(
+        prompt, narration=scene.get("voiceover", "")
+    )
     if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
         try:
             print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
@@ -924,9 +926,15 @@ async def run_pipeline():
                 try:
                     print("Searching for real portrait video footage...")
                     clip = search_pixabay_video(
-                        build_stock_search_query(scene["image_prompt"]),
+                        build_stock_search_query(
+                            scene["image_prompt"], narration=scene.get("voiceover", "")
+                        ),
                         temp / f"scene_{index}.mp4",
                         registry=ASSET_ATTRIBUTIONS,
+                        exclude_asset_ids={
+                            str(item.get("asset_id")) for item in ASSET_ATTRIBUTIONS
+                            if item.get("asset_id") is not None
+                        },
                     )
                 except Exception as exc:
                     print(f"Stock video unavailable for scene {index + 1}: {type(exc).__name__}: {str(exc)[:220]}")
