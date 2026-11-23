@@ -76,10 +76,10 @@ Official references:
 
 - Model allowlist: `agnes-video-2.5-flash` only. The paid `agnes-video-2.5` model is never selected.
 - Create endpoint: `POST https://apihub.agnes-ai.com/v1/videos`; poll endpoint: `GET https://apihub.agnes-ai.com/agnesapi?video_id=<VIDEO_ID>&model_name=agnes-video-2.5-flash`.
-- The request is text-to-video, one output, 720P, 9:16 by default, and 4 seconds by default. The supported duration range is 4–12 seconds.
+- The request supports text-to-video and reference-image video, one output, 720P, 9:16 by default, and 4 seconds by default. The supported duration range is 4–12 seconds. Reference mode accepts up to five publicly accessible HTTPS image URLs and uses Agnes `<Picture N>` prompt references.
 - The adapter is disabled by default and requires `ENABLE_AGNES_VIDEO_GENERATION=true`, `AGNES_VIDEO_FREE_PRICE_CONFIRMED=yes`, and the existing `AGNES_API_KEY` secret. Optional `AGNES_BASE_URL` must use HTTPS and end in `/v1`.
 - The free-price confirmation is deliberately manual. Agnes currently describes the Flash price as a limited-time $0/sec promotion; promotions, access, rate limits, and queue availability can change. A successful API key or mocked test does not prove that a user's account is free.
-- A hard cap allows one video per Python process. The adapter does not automatically retry video creation, switch to the paid model, or fall back to another paid provider. It polls the asynchronous task and downloads only a secure HTTPS MP4 result.
+- A hard cap allows one video per Python process. The adapter does not automatically retry video creation, switch to the paid model, or fall back to another paid provider. It polls the asynchronous task and downloads only a secure HTTPS MP4 result. Local FLUX image files cannot yet be passed directly: Agnes requires publicly accessible HTTPS reference URLs, and Nūr does not yet have an approved upload/hosting bridge for those files.
 - Unit tests use mocked responses only. No live Agnes API request or video generation has been performed. The adapter is not connected to production scene assembly yet.
 
 Official references:
