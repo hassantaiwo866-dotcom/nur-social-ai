@@ -148,3 +148,8 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Motion duration is bounded; invalid values use a safe default.
 - Regression tests verify direction, colour, style position and duration handling. Visual appearance still requires inspection of an actual render.
 - No new dependency, API, credential or cost.
+
+
+### Animated brand accent expression correction
+
+The FFmpeg `drawbox` x-expression now uses explicit addition for rightward travel and subtraction for leftward travel. This avoids emitting a redundant `+-1*` expression and keeps the filter expression aligned with the directional regression tests. The animation remains bounded by the existing duration clamp.
