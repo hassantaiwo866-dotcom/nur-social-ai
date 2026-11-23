@@ -848,7 +848,7 @@ def run_qa(image_path, video_path, plan):
             failures.append(f"Potentially shaming language found: {term}")
 
     if failures:
-        raise RuntimeError("Quality checks failed:\\n- " + "\\n- ".join(failures))
+        raise RuntimeError("Quality checks failed:\n- " + "\n- ".join(failures))
 
     return {
         "status": "passed",
