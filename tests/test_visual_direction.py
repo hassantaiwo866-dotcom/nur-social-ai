@@ -78,6 +78,16 @@ class VisualDirectionTests(unittest.TestCase):
         self.assertIn("short dark hair", first)
         self.assertIn("TEXT-GUIDED CHARACTER CONTINUITY", first)
 
+    def test_recurring_character_uses_still_chain_instead_of_local_illustration(self):
+        video = self.video()
+        video["characters"] = [
+            {"id": "main_person", "visual_description": "A fictional adult with short dark hair and a navy jacket."}
+        ]
+        video["scenes"][3]["character_ids"] = ["main_person"]
+        normalise_video_visual_direction(video)
+        self.assertEqual(video["scenes"][3]["visual_source"], "generated_still")
+        self.assertIn("recurring character", video["scenes"][3]["source_adjustment"])
+
     def test_manifest_discloses_text_only_continuity_and_stock_risk(self):
         video = self.video()
         video["characters"] = [
