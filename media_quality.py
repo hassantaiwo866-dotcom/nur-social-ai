@@ -7,14 +7,13 @@ from pathlib import Path
 import subprocess
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
+from brand_tokens import PRIMARY_EMERALD, DEEP_FOREST, WARM_IVORY, MUTED_GOLD, CHARCOAL
 
 WIDTH = 1080
 HEIGHT = 1920
-FOREST = (11, 93, 59)  # Nūr primary emerald #0B5D3B
-DEEP_FOREST = (6, 78, 59)  # secondary depth colour
-IVORY = (245, 240, 225)
-GOLD = (212, 175, 55)
-CHARCOAL = (18, 24, 21)
+FOREST = PRIMARY_EMERALD
+IVORY = WARM_IVORY
+GOLD = MUTED_GOLD
 
 
 def _font(size, serif=False, bold=False):
