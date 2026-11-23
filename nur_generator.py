@@ -24,6 +24,7 @@ from visual_continuity import scene_sequence_direction
 from storytelling import build_audience_connection_direction
 from editorial_quality import evaluate_editorial_plan
 from human_review import build_human_review_checklist
+from production_reliability import new_run_manifest, update_stage, record_failure, save_run_manifest
 
 
 ROOT = Path(__file__).resolve().parent
@@ -882,7 +883,15 @@ def run_qa(image_path, video_path, plan):
 
 
 async def run_pipeline():
+    run_id = f"run_{int(__import__(\"time\").time())}"
+    run_manifest = new_run_manifest(run_id)
+    manifest_path = OUTPUT / "production_run.json"
+    save_run_manifest(manifest_path, run_manifest)
+    update_stage(run_manifest, "tool_preflight", "started")
+    save_run_manifest(manifest_path, run_manifest)
     require_tools()
+    update_stage(run_manifest, "tool_preflight", "completed")
+    save_run_manifest(manifest_path, run_manifest)
 
     brand = load_json(
         ROOT / "brand_config.json",
@@ -894,10 +903,14 @@ async def run_pipeline():
     if not isinstance(history, list):
         history = []
 
+    update_stage(run_manifest, "editorial_plan", "started")
+    save_run_manifest(manifest_path, run_manifest)
     print("1. Creating editorial plan...")
 
     plan = generate_editorial_plan(brand, history)
     editorial_quality = evaluate_editorial_plan(plan)
+    update_stage(run_manifest, "editorial_plan", "completed", f"Editorial score {editorial_quality[\"score\"]}/{editorial_quality[\"max_score\"]}")
+    save_run_manifest(manifest_path, run_manifest)
     quality_score = editorial_quality["score"]
     quality_max = editorial_quality["max_score"]
     quality_passed = editorial_quality["checks_passed"]
@@ -916,6 +929,8 @@ async def run_pipeline():
 
         temp = Path(temporary_directory)
 
+        update_stage(run_manifest, "image_generation", "started")
+        save_run_manifest(manifest_path, run_manifest)
         print("2. Generating editorial photograph...")
 
         graphic_photo = generate_photo(
@@ -925,6 +940,8 @@ async def run_pipeline():
             temp / "graphic_photo.jpg",
         )
 
+        update_stage(run_manifest, "image_generation", "completed")
+        save_run_manifest(manifest_path, run_manifest)
         print("3. Building editorial graphic...")
 
         image_path = OUTPUT / "nur_post.png"
@@ -935,6 +952,8 @@ async def run_pipeline():
             graphic_photo,
         )
 
+        update_stage(run_manifest, "graphic_render", "started")
+        save_run_manifest(manifest_path, run_manifest)
         print("4. Producing cinematic scenes...")
 
         segments = []
@@ -1011,6 +1030,8 @@ async def run_pipeline():
 
             segments.append(segment)
 
+        update_stage(run_manifest, "scene_rendering", "completed", f"{len(segments)} scenes rendered")
+        save_run_manifest(manifest_path, run_manifest)
         print("5. Creating closing card...")
 
         end_card = create_end_card(
@@ -1038,10 +1059,18 @@ async def run_pipeline():
 
         segments.append(end_segment)
 
+        update_stage(run_manifest, "end_card", "started")
+        save_run_manifest(manifest_path, run_manifest)
         print("6. Joining scenes with restrained crossfades...")
         video_path = OUTPUT / "nur_reel.mp4"
         join_video_segments(segments, video_path, transitions=[scene.get("transition", "fade") for scene in plan["video"]["scenes"]] + ["fade"])
 
+        update_stage(run_manifest, "video_join", "completed")
+        run_manifest["outputs"]["image"] = str(image_path)
+        run_manifest["outputs"]["video"] = str(video_path)
+        save_run_manifest(manifest_path, run_manifest)
+        update_stage(run_manifest, "quality_checks", "started")
+        save_run_manifest(manifest_path, run_manifest)
         print("8. Running quality checks...")
 
         qa = run_qa(
@@ -1063,6 +1092,12 @@ async def run_pipeline():
             },
         )
 
+        update_stage(run_manifest, "quality_checks", "completed", qa.get("status", "unknown"))
+        update_stage(run_manifest, "package_metadata", "completed")
+        run_manifest["outputs"]["package_metadata"] = str(OUTPUT / "latest_post.json")
+        run_manifest["status"] = "completed"
+        run_manifest["updated_at"] = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        save_run_manifest(manifest_path, run_manifest)
         history.append(plan["topic_slug"])
 
         save_json(
@@ -1077,4 +1112,14 @@ async def run_pipeline():
 
 
 if __name__ == "__main__":
-    asyncio.run(run_pipeline())
+    try:
+        asyncio.run(run_pipeline())
+    except Exception as exc:
+        try:
+            manifest_path = OUTPUT / "production_run.json"
+            manifest = load_json(manifest_path, new_run_manifest("failed_run"))
+            record_failure(manifest, exc)
+            save_run_manifest(manifest_path, manifest)
+        except Exception as manifest_error:
+            print(f"Could not save production failure manifest: {type(manifest_error).__name__}")
+        raise
