@@ -14,3 +14,11 @@ This is observability, not automatic recovery. It does not retry provider calls,
 
 ## Tests
 Deterministic tests cover stage updates, failure recording, and atomic file replacement behavior.
+
+
+## Day 9 — rendered output validation
+
+- Added `output_validation.py` to inspect poster image integrity and dimensions, rendered video metadata via ffprobe, portrait dimensions, frame rate, duration, and presence of an audio stream.
+- QA now records validated media metadata in the package report. Failed validation stops packaging and publishing eligibility.
+- Added mocked ffprobe and temporary-image tests for valid output and malformed/missing/incorrect media cases.
+- Tests do not call external generation providers or create billable requests. A real render remains necessary for visual/audio human review.
