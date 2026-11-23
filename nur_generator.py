@@ -354,7 +354,14 @@ def generate_photo(prompt,width,height,destination,scene=None):
     if os.getenv("PIXABAY_API_KEY", "").strip():
         try:
             print("Searching Pixabay for a licensed editorial photograph...")
-            path = search_pixabay_photo(stock_query, destination, width, height, registry=ASSET_ATTRIBUTIONS)
+            path = search_pixabay_photo(
+                stock_query, destination, width, height,
+                registry=ASSET_ATTRIBUTIONS,
+                exclude_asset_ids={
+                    str(item.get("asset_id")) for item in ASSET_ATTRIBUTIONS
+                    if item.get("asset_id") is not None
+                },
+            )
             return enhance_photo(path)
         except Exception as exc:
             print(f"Pixabay photo search unavailable: {type(exc).__name__}: {str(exc)[:240]}")
