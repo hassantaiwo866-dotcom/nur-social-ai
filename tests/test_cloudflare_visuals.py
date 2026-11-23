@@ -74,5 +74,64 @@ class CloudflareVisualTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "between 1 and 4"):
                 visuals.generate_image("scene", "unused.png", steps=8)
 
+
+    def test_klein_uses_multipart_model_endpoint_and_dimensions(self):
+        with tempfile.TemporaryDirectory() as folder, self._env():
+            session = Mock()
+            session.post.return_value = self._image_response()
+            path = visuals.generate_klein_image(
+                "cinematic portrait scene", Path(folder) / "klein.png",
+                width=768, height=1280, session=session,
+            )
+            self.assertTrue(path.exists())
+            args = session.post.call_args
+            self.assertTrue(args.args[0].endswith(visuals.KLEIN_MODEL))
+            self.assertEqual(args.kwargs["data"], {
+                "prompt": "cinematic portrait scene", "width": "768", "height": "1280"
+            })
+            self.assertNotIn("Content-Type", args.kwargs["headers"])
+
+    def test_klein_requires_free_plan_confirmation(self):
+        with patch.dict(os.environ, {
+            "ENABLE_CLOUDFLARE_IMAGE_GENERATION": "true",
+            "CLOUDFLARE_FREE_PLAN_CONFIRMED": "",
+            "CLOUDFLARE_ACCOUNT_ID": "account",
+            "CLOUDFLARE_API_TOKEN": "token",
+        }):
+            with self.assertRaisesRegex(RuntimeError, "Workers Free"):
+                visuals.generate_klein_image("scene", "unused.png")
+
+    def test_klein_reference_images_must_be_under_512_pixels(self):
+        with tempfile.TemporaryDirectory() as folder, self._env():
+            reference = Path(folder) / "reference.png"
+            Image.new("RGB", (512, 256)).save(reference)
+            session = Mock()
+            with self.assertRaisesRegex(ValueError, "smaller than 512x512"):
+                visuals.generate_klein_image(
+                    "use reference", Path(folder) / "out.png",
+                    reference_images=[reference], session=session,
+                )
+            session.post.assert_not_called()
+
+    def test_klein_rejects_more_than_four_references(self):
+        with self._env():
+            with self.assertRaisesRegex(ValueError, "at most four"):
+                visuals.generate_klein_image(
+                    "scene", "unused.png",
+                    reference_images=["a", "b", "c", "d", "e"],
+                )
+
+    def test_klein_does_not_send_request_when_disabled(self):
+        with patch.dict(os.environ, {
+            "ENABLE_CLOUDFLARE_IMAGE_GENERATION": "",
+            "CLOUDFLARE_FREE_PLAN_CONFIRMED": "yes",
+            "CLOUDFLARE_ACCOUNT_ID": "account",
+            "CLOUDFLARE_API_TOKEN": "token",
+        }):
+            session = Mock()
+            with self.assertRaisesRegex(RuntimeError, "disabled"):
+                visuals.generate_klein_image("scene", "unused.png", session=session)
+            session.post.assert_not_called()
+
 if __name__ == "__main__":
     unittest.main()
