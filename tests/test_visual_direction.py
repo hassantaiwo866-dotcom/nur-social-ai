@@ -37,6 +37,17 @@ class VisualDirectionTests(unittest.TestCase):
         self.assertEqual(video["scenes"][0]["visual_source"], "stock_photo")
         self.assertEqual(video["scenes"][0]["composition"], "hybrid_editorial")
 
+    def test_empty_or_auto_choices_use_safe_scene_defaults(self):
+        video = self.video()
+        video["characters"] = None
+        video["scenes"][0]["visual_source"] = "auto"
+        video["scenes"][0]["composition"] = None
+        video["scenes"][0]["character_ids"] = None
+        normalise_video_visual_direction(video)
+        self.assertEqual(video["scenes"][0]["visual_source"], "stock_video")
+        self.assertEqual(video["scenes"][0]["composition"], "full_frame")
+        self.assertEqual(video["scenes"][0]["character_ids"], [])
+
     def test_known_legacy_source_alias_is_normalised(self):
         video = self.video()
         video["scenes"][0]["visual_source"] = "stock_footage"
