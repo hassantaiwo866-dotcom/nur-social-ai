@@ -151,7 +151,7 @@ The following is an inspection of the existing code and documentation, not a cla
 - **Rendered proof:** unit tests validate mechanics, not the artistic quality or continuity of a complete generated video. A fresh output still needs human inspection.
 
 ### Test/documentation observation
-The inspected `tests/test_media_quality.py` contains a collage-style test after the module's `if __name__ == "__main__": unittest.main()` block, indented inside that block rather than inside the test class. Under normal unittest discovery that test is not discovered. This should be corrected when the renderer is next changed; it is not changed by this documentation-only update.
+The previously misplaced collage-rendering test in `tests/test_media_quality.py` has been moved into `MediaQualityTests`, before the module's direct-run guard, so normal unittest discovery can execute it. The CI compile step now explicitly includes `story_format.py`, `visual_direction.py`, `visual_prompting.py` and the new visual-direction tests.
 
 ## 9. Implementation sequence
 
