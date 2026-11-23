@@ -29,6 +29,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Compile Python files
-        run: python -m py_compile nur_generator.py media_quality.py telegram_publisher.py telegram_review.py tests/test_provider_discovery.py tests/test_telegram_review.py tests/test_media_quality.py tests/test_visual_providers.py cloudflare_visuals.py tests/test_cloudflare_visuals.py
+        run: python -m py_compile nur_generator.py media_quality.py telegram_publisher.py telegram_review.py tests/test_provider_discovery.py tests/test_telegram_review.py tests/test_media_quality.py tests/test_visual_providers.py cloudflare_visuals.py tests/test_cloudflare_visuals.py r2_temp_storage.py tests/test_r2_temp_storage.py agnes_video.py tests/test_agnes_video.py
       - name: Run unit tests
         run: python -m unittest discover -s tests -v
