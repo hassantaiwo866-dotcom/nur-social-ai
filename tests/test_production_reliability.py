@@ -6,11 +6,12 @@ from production_reliability import new_run_manifest, update_stage, record_failur
 
 
 class ProductionReliabilityTests(unittest.TestCase):
-    def test_run_manifest_records_stage_progress(self):
+    def test_run_manifest_records_stage_progress_without_finishing_run(self):
         manifest = new_run_manifest("test-run")
         update_stage(manifest, "editorial", "completed", "Plan created")
         self.assertEqual(manifest["status"], "running")
         self.assertEqual(manifest["stages"][0]["stage"], "editorial")
+        self.assertEqual(manifest["stages"][0]["status"], "completed")
 
     def test_failure_is_persistable_and_keeps_manual_review_flag(self):
         manifest = new_run_manifest("test-run")
