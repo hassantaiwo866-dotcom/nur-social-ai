@@ -86,9 +86,9 @@ class CloudflareVisualTests(unittest.TestCase):
             self.assertTrue(path.exists())
             args = session.post.call_args
             self.assertTrue(args.args[0].endswith(visuals.KLEIN_MODEL))
-            self.assertEqual(args.kwargs["data"], {
-                "prompt": "cinematic portrait scene", "width": "768", "height": "1280"
-            })
+            self.assertEqual(args.kwargs["data"], {"width": "768", "height": "1280"})
+            self.assertEqual(args.kwargs["files"][0][0], "prompt")
+            self.assertEqual(args.kwargs["files"][0][1][1], "cinematic portrait scene")
             self.assertNotIn("Content-Type", args.kwargs["headers"])
 
     def test_klein_requires_free_plan_confirmation(self):
