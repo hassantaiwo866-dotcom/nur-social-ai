@@ -333,7 +333,7 @@ def generate_photo(prompt,width,height,destination,scene=None):
     if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
         try:
             print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
-            path = generate_cloudflare_image(generation_prompt, destination, width=width, height=height)
+            path = generate_cloudflare_image(generation_prompt, destination, width=max(512, width), height=max(512, height))
             ASSET_ATTRIBUTIONS.append({
                 "provider": "Cloudflare Workers AI",
                 "model": "@cf/black-forest-labs/flux-2-klein-4b",
