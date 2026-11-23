@@ -142,9 +142,6 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("overlay=(W-w)/2:(H-h)/2", graph)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_collage_style_adds_tactile_paper_caption(self):
         from media_quality import render_scene_frame, render_scene_overlay
         with tempfile.TemporaryDirectory() as folder:
@@ -161,6 +158,9 @@ if __name__ == "__main__":
                 self.assertEqual(image.mode, "RGBA")
                 self.assertEqual(image.size, (1080, 1920))
 
+
+if __name__ == "__main__":
+    unittest.main()
 
 class MotionAccentCompatibilityTests(unittest.TestCase):
     def test_accent_uses_static_ffmpeg_coordinates(self):
