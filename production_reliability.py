@@ -35,10 +35,10 @@ def update_stage(manifest: dict[str, Any], stage: str, status: str,
         "timestamp": manifest["updated_at"],
         "details": details,
     })
+    # A completed stage does not mean the entire production run is complete.
+    # Overall completion is set by the pipeline only after every stage succeeds.
     if status == "failed":
         manifest["status"] = "failed"
-    elif status == "completed":
-        manifest["status"] = "completed"
     return manifest
 
 
