@@ -1,12 +1,16 @@
-"""Optional Agnes scene animation through private temporary R2 references."""
+"""Optional Agnes scene animation using an inline Base64 first frame."""
 from __future__ import annotations
 
+import base64
 import math
+import mimetypes
 import os
 from pathlib import Path
 
 from agnes_video import generate_video as generate_agnes_video
-from r2_temp_storage import temporary_image_url
+
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp"}
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 
 def generate_agnes_scene_clip(
@@ -17,30 +21,34 @@ def generate_agnes_scene_clip(
     *,
     logger=print,
 ):
-    """Animate a generated still; return None for safe local-motion fallback."""
+    """Animate a local generated still; return None for safe local-motion fallback."""
     enabled = os.getenv("ENABLE_AGNES_VIDEO_GENERATION", "").strip().lower() in {
         "1", "true", "yes"
     }
-    storage_enabled = os.getenv("ENABLE_R2_TEMP_STORAGE", "").strip().lower() in {
-        "1", "true", "yes"
-    }
-    if not (enabled and storage_enabled):
+    if not enabled:
         return None
 
     seconds = min(12, max(4, math.ceil(float(narration_duration))))
     try:
-        with temporary_image_url(image_path) as reference_url:
-            return generate_agnes_video(
-                prompt,
-                destination,
-                seconds=seconds,
-                aspect_ratio="9:16",
-                reference_images=[reference_url],
-            )
+        path = Path(image_path)
+        if not path.is_file():
+            raise FileNotFoundError("Generated scene image does not exist.")
+        if path.stat().st_size <= 0 or path.stat().st_size > MAX_IMAGE_BYTES:
+            raise ValueError("Image must be between 1 byte and 10 MiB.")
+        content_type, _ = mimetypes.guess_type(path.name)
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            raise ValueError("Only PNG, JPEG and WebP images are accepted.")
+        first_frame = base64.b64encode(path.read_bytes()).decode("ascii")
+        return generate_agnes_video(
+            prompt,
+            destination,
+            seconds=seconds,
+            aspect_ratio="9:16",
+            first_frame_base64=first_frame,
+        )
     except Exception as exc:
-        # Never log the signed URL, API key, or provider response body.
         logger(
-            "Agnes/R2 animation unavailable; using local still motion: "
+            "Agnes inline-image animation unavailable; using local still motion: "
             f"{type(exc).__name__}"
         )
         return None
