@@ -6,6 +6,7 @@ This adapter never selects the paid Agnes Video 2.5 model or falls back to it.
 """
 from __future__ import annotations
 
+import base64
 import os
 import time
 from pathlib import Path
@@ -47,7 +48,7 @@ def generate_video(
     *,
     seconds: int = DEFAULT_SECONDS,
     aspect_ratio: str = "9:16",
-    reference_images: list[str] | None = None,
+    first_frame_base64: str | None = None,
     session=requests,
     poll_interval: float = 5,
     max_polls: int = 36,
@@ -67,19 +68,14 @@ def generate_video(
 
     key, base_url, host_root = _settings()
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-    references = list(reference_images or [])
-    if len(references) > 5:
-        raise ValueError("Agnes Video 2.5 Flash accepts at most five reference images.")
-    for reference in references:
-        parsed = urlparse(reference) if isinstance(reference, str) else None
-        if not parsed or parsed.scheme != "https" or not parsed.hostname:
-            raise ValueError("Agnes reference images must be public HTTPS URLs.")
-
-    mode = "reference" if references else "text"
-    video_prompt = prompt.strip()[:2000]
-    if references and not any(f"<Picture {index}>" in video_prompt for index in range(1, len(references) + 1)):
-        picture_hints = ", ".join(f"<Picture {index}>" for index in range(1, len(references) + 1))
-        video_prompt += f" Use {picture_hints} as visual references and preserve the depicted subject's identity and style."
+    if first_frame_base64 is not None:
+        if not isinstance(first_frame_base64, str) or not first_frame_base64.strip():
+            raise ValueError("First-frame image must be non-empty Base64.")
+        mode = "img2video"
+        video_prompt = prompt.strip()[:2000]
+    else:
+        mode = "text"
+        video_prompt = prompt.strip()[:2000]
 
     payload = {
         "model": MODEL,
@@ -90,8 +86,8 @@ def generate_video(
         "aspect_ratio": aspect_ratio,
         "n": 1,
     }
-    if references:
-        payload["images"] = references
+    if first_frame_base64 is not None:
+        payload["first_frame"] = first_frame_base64
 
     created = session.post(
         f"{base_url}/videos", headers=headers, json=payload, timeout=60
