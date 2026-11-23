@@ -97,7 +97,7 @@ class VisualProviderTests(unittest.TestCase):
             )
             self.assertTrue(result.exists())
             self.assertEqual(registry[0]["asset_id"], 13)
-            self.assertEqual(session.get.call_args_list[1].kwargs["url"],
+            self.assertEqual(session.get.call_args_list[1].args[0],
                              "https://cdn.example/new.jpg")
 
     @patch("visual_providers.subprocess.run")
@@ -105,7 +105,9 @@ class VisualProviderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             search = Mock()
             search.raise_for_status.return_value = None
-            search.json.return_value = {"hits": [{
+            search.json.return_value = {"hits": [
+                {"id": 87, "duration": 12, "videos": {}},
+                {
                 "id": 88, "duration": 12, "user": "creator",
                 "pageURL": "https://pixabay.com/videos/id-88/",
                 "tags": "person walking",
@@ -125,8 +127,10 @@ class VisualProviderTests(unittest.TestCase):
             result = providers.search_pixabay_video(
                 "person walking", Path(folder) / "clip.mp4",
                 api_key="test-key", session=session, registry=registry,
+                exclude_asset_ids={"87"},
             )
             self.assertTrue(result.exists())
+            self.assertEqual(registry[0]["asset_id"], 88)
             self.assertEqual(registry[0]["media_type"], "stock_video")
             params = session.get.call_args_list[0].kwargs["params"]
             self.assertNotIn("orientation", params)
