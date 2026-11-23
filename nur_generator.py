@@ -23,6 +23,7 @@ from visual_prompting import compose_generation_prompt, build_stock_search_query
 from visual_continuity import scene_sequence_direction
 from storytelling import build_audience_connection_direction
 from editorial_quality import evaluate_editorial_plan
+from human_review import build_human_review_checklist
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1057,6 +1058,7 @@ async def run_pipeline():
                 "video_caption": plan["caption_video"],
                 "assets": ASSET_ATTRIBUTIONS,
                 "editorial_quality": editorial_quality,
+                "human_review": build_human_review_checklist(),
                 "qa": qa,
             },
         )
