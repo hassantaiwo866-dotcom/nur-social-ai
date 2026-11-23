@@ -70,7 +70,7 @@ def normalise_video_visual_direction(video: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(video, dict):
         raise ValueError("video must be an object")
 
-    characters = video.get("characters", [])
+    characters = video.get("characters") or []
     if not isinstance(characters, list):
         raise ValueError("video.characters must be a list")
 
@@ -108,11 +108,12 @@ def normalise_video_visual_direction(video: dict[str, Any]) -> dict[str, Any]:
             ("depth_treatment", DEPTH_TREATMENTS),
             ("typography_treatment", TYPOGRAPHY_TREATMENTS),
         ):
-            scene[field] = _normalise_choice(
-                scene.get(field, defaults[field]), allowed, field
-            )
+            raw_choice = scene.get(field)
+            if raw_choice is None or str(raw_choice).strip().lower() in ("", "auto"):
+                raw_choice = defaults[field]
+            scene[field] = _normalise_choice(raw_choice, allowed, field)
 
-        character_ids = scene.get("character_ids", [])
+        character_ids = scene.get("character_ids") or []
         if not isinstance(character_ids, list):
             raise ValueError(f"Scene {index + 1} character_ids must be a list.")
         cleaned_ids = []
