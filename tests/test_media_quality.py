@@ -159,8 +159,6 @@ class MediaQualityTests(unittest.TestCase):
                 self.assertEqual(image.size, (1080, 1920))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 class MotionAccentCompatibilityTests(unittest.TestCase):
     def test_accent_uses_static_ffmpeg_coordinates(self):
@@ -185,3 +183,7 @@ class MotionAccentCompatibilityTests(unittest.TestCase):
             nur_generator.make_video_segment("frame.jpg", "voice.mp3", "out.mp4", 4.0, scene_index=0, movement="subtle tilt down")
         video_filter = run.call_args.args[0][run.call_args.args[0].index("-vf") + 1]
         self.assertIn("y='(ih-ih/zoom)*(0.3+(0.62-0.3)*on/", video_filter)
+
+
+if __name__ == "__main__":
+    unittest.main()
