@@ -123,3 +123,33 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - The module is local-only and introduces no API calls, credentials, dependencies or generation costs.
 - Unit tests cover the ordered four-beat arc, non-standard scene counts, invalid indices and prompt integration.
 - Automated tests verify deterministic instructions, not whether generated scenes actually look continuous. Inspect the resulting four-scene video before publication.
+
+
+## Day 6 — transition safety verification
+
+- The existing editor supports per-boundary FFmpeg transitions, normalizes the `soft_cut` alias to `fade`, and falls back to `fade` for unsupported transition names.
+- Added tests verifying unsupported names do not reach FFmpeg, the alias is normalized, and segments shorter than the configured transition are rejected before FFmpeg is invoked.
+- This stage hardens existing transition functionality; it does not add new visual transition effects or alter editorial choices.
+- CI verification pending.
+
+
+## Day 7 — voiceover filter duration safety
+
+- Voiceover finishing already includes high/low-pass filtering, compression, loudness normalization and short fades.
+- Added finite-duration validation to prevent invalid FFmpeg filter values from NaN or infinity. Negative/very short durations retain a safe minimum of 0.25 seconds.
+- Regression tests cover negative and non-finite durations.
+- No additional audio provider, music service, dependency or cost was introduced. Automated verification pending.
+
+
+## Day 8 — animated emerald accent
+
+- Replaced the static accent rule with a restrained horizontal travel animation using FFmpeg's per-frame drawbox expression.
+- Alternates travel direction across scenes; cinematic-documentary and collage styles retain their respective vertical positions.
+- Motion duration is bounded; invalid values use a safe default.
+- Regression tests verify direction, colour, style position and duration handling. Visual appearance still requires inspection of an actual render.
+- No new dependency, API, credential or cost.
+
+
+### Animated brand accent expression correction
+
+The FFmpeg `drawbox` x-expression now uses explicit addition for rightward travel and subtraction for leftward travel. This avoids emitting a redundant `+-1*` expression and keeps the filter expression aligned with the directional regression tests. The animation remains bounded by the existing duration clamp.

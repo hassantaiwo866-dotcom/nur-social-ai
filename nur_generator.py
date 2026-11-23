@@ -19,13 +19,15 @@ import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
 from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
-from cloudflare_visuals import generate_image as generate_cloudflare_image
+from cloudflare_visuals import generate_klein_image as generate_cloudflare_image
 from visual_prompting import compose_generation_prompt, build_stock_search_query
 from visual_continuity import scene_sequence_direction
 from storytelling import build_audience_connection_direction
 from editorial_quality import evaluate_editorial_plan
 from human_review import build_human_review_checklist
 from production_reliability import new_run_manifest, update_stage, record_failure, save_run_manifest
+from scene_video_provider import generate_agnes_scene_clip
+from brand_tokens import PALETTE_HEX, WORDMARK, TAGLINE
 
 
 ROOT = Path(__file__).resolve().parent
@@ -37,17 +39,14 @@ WIDTH = 1080
 HEIGHT = 1920
 FPS = 24
 
-DEEP_FOREST = "#064E3B"
-PRIMARY_EMERALD = "#0B5D3B"
-LIVING_GREEN = "#0B5D3B"
-NEAR_BLACK = "#080808"
-WARM_IVORY = "#F5F0E1"
-MUTED_GOLD = "#D4AF37"
-EARTH_BRONZE = "#A68A64"
-CHARCOAL = "#1C1C1C"
-
-WORDMARK = "Nūr"
-TAGLINE = "Build the person you want to become."
+DEEP_FOREST = PALETTE_HEX["deep_forest"]
+PRIMARY_EMERALD = PALETTE_HEX["primary_emerald"]
+LIVING_GREEN = PRIMARY_EMERALD
+NEAR_BLACK = PALETTE_HEX["near_black"]
+WARM_IVORY = PALETTE_HEX["warm_ivory"]
+MUTED_GOLD = PALETTE_HEX["muted_gold"]
+EARTH_BRONZE = PALETTE_HEX["earth_bronze"]
+CHARCOAL = PALETTE_HEX["charcoal"]
 
 VIDEO_CATEGORIES = [
     "Awareness and digital habits",
@@ -336,13 +335,13 @@ def generate_photo(prompt,width,height,destination,scene=None):
     if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
         try:
             print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
-            path = generate_cloudflare_image(generation_prompt, destination)
+            path = generate_cloudflare_image(generation_prompt, destination, width=max(512, width), height=max(512, height))
             ASSET_ATTRIBUTIONS.append({
                 "provider": "Cloudflare Workers AI",
-                "model": "@cf/black-forest-labs/flux-1-schnell",
+                "model": "@cf/black-forest-labs/flux-2-klein-4b",
                 "asset_id": path.name, "creator": "AI-generated", "source_page": None,
-                "license": "FLUX.1 Schnell; review applicable model licence",
-                "license_url": "https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/",
+                "license": "FLUX.2 Klein 4B; review applicable model licence",
+                "license_url": "https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/",
                 "media_type": "ai_generated_image", "review_required": True,
             })
             return enhance_photo(path)
@@ -594,13 +593,25 @@ def probe_duration(path):
     return float(output)
 
 
-def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary"):
-    """Return a short travelling Nūr emerald accent line for the scene."""
+def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary", duration=4.0):
+    """Create a restrained emerald accent that travels horizontally during the scene."""
     y = 1435 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 151
-    # Fixed coordinates are portable across FFmpeg drawbox implementations.
-    # Alternate sides by scene; reliability takes priority over line animation.
-    x = 80 if int(scene_index) % 2 == 0 else 810
-    return f"drawbox=x={x}:y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
+    try:
+        seconds = float(duration)
+    except (TypeError, ValueError):
+        seconds = 4.0
+    if not math.isfinite(seconds):
+        seconds = 4.0
+    seconds = min(12.0, max(0.25, seconds))
+    travel_seconds = min(4.0, seconds)
+    travel = 180.0
+    start_x = 80 if int(scene_index) % 2 == 0 else 800
+    direction = 1 if int(scene_index) % 2 == 0 else -1
+    if direction > 0:
+        x = f"{start_x}+{travel:g}*min(t/{travel_seconds:.3f},1)"
+    else:
+        x = f"{start_x}-{travel:g}*min(t/{travel_seconds:.3f},1)"
+    return f"drawbox=x='{x}':y={y}:w=120:h=5:color=0B5D3B@1:t=fill"
 
 
 def make_video_segment_from_clip(
@@ -618,7 +629,7 @@ def make_video_segment_from_clip(
         "[foreground_source]scale=1080:1920:force_original_aspect_ratio=decrease[foreground];"
         "[background][foreground]overlay=(W-w)/2:(H-h)/2[composed];"
         "[composed][1:v]overlay=0:0:format=auto,"
-        + motion_accent_filter(scene_index, visual_style)
+        + motion_accent_filter(scene_index, visual_style, duration)
         + ",format=yuv420p[motion]",
         "-map", "[motion]", "-map", "2:a",
         "-af", f"apad,{voice_audio_filter(duration)}", "-t", str(duration), "-r", str(FPS),
@@ -668,7 +679,7 @@ def make_video_segment(
             "d=1:s=1080x1920:fps=24,"
             "format=yuv420p"
         )
-        video_filter += "," + motion_accent_filter(scene_index)
+        video_filter += "," + motion_accent_filter(scene_index, duration=duration)
     else:
         video_filter = "scale=1080:1920," + motion_accent_filter(scene_index) + ",format=yuv420p"
 
@@ -812,22 +823,10 @@ def create_end_card(destination):
 
 
 def run_qa(image_path, video_path, plan):
+    from output_validation import validate_media_outputs
+
     failures = []
-
-    with Image.open(image_path) as image:
-        if image.size != (1080, 1350):
-            failures.append("Editorial image dimensions are incorrect.")
-
-    if not video_path.exists() or video_path.stat().st_size < 50000:
-        failures.append("Video is missing or too small.")
-
-    if video_path.exists():
-        duration = probe_duration(video_path)
-
-        if not 12 <= duration <= 60:
-            failures.append(
-                f"Unexpected video duration: {duration:.1f}s."
-            )
+    output_validation = validate_media_outputs(image_path, video_path)
 
     all_text = json.dumps(plan, ensure_ascii=False)
 
@@ -843,42 +842,30 @@ def run_qa(image_path, video_path, plan):
         failures.append("Video scenes must contain four distinct visual prompts.")
 
     harmful_terms = [
-        "pathetic",
-        "loser",
-        "worthless",
-        "lazy",
-        "punish yourself",
-        "you should be ashamed",
+        "pathetic", "loser", "worthless", "lazy",
+        "punish yourself", "you should be ashamed",
     ]
-
     lowered = all_text.lower()
-
     for term in harmful_terms:
         if term in lowered:
-            failures.append(
-                f"Potentially shaming language found: {term}"
-            )
+            failures.append(f"Potentially shaming language found: {term}")
 
     if failures:
-        raise RuntimeError(
-            "Quality checks failed:\n- "
-            + "\n- ".join(failures)
-        )
+        raise RuntimeError("Quality checks failed:\n- " + "\n- ".join(failures))
 
     return {
         "status": "passed",
         "checks": [
-            "Editorial image dimensions",
-            "Video file and duration",
+            *output_validation["checks"],
             "Generated text brand spelling",
             "Four distinct scene visual prompts",
             "Basic non-shaming language check",
         ],
+        "media_metadata": output_validation["metadata"],
         "manual_review_required": True,
         "manual_review_note": (
-            "Automated checks cannot reliably detect "
-            "watermarks, poor composition or visual defects. "
-            "Review both assets before publishing."
+            "Automated checks cannot reliably detect watermarks, poor composition "
+            "or visual defects. Review both assets before publishing."
         ),
     }
 
@@ -1019,10 +1006,30 @@ async def run_pipeline():
             await make_voiceover(scene["voiceover"], audio)
             duration = probe_duration(audio) + 0.6
             segment = temp / f"segment_{index}.mp4"
+            agnes_clip = None
 
-            if clip is not None:
+            # Animate only Nūr-generated stills. Existing stock video remains the
+            # first choice, and the local FFmpeg still-image path remains fallback.
+            if clip is None and photo is not None:
+                agnes_clip = generate_agnes_scene_clip(
+                    photo,
+                    scene["image_prompt"],
+                    temp / f"agnes_scene_{index}.mp4",
+                    duration,
+                    logger=lambda message: print(f"Scene {index + 1}: {message}"),
+                )
+
+            if clip is not None or agnes_clip is not None:
+                if overlay is None:
+                    overlay = render_scene_overlay(
+                        scene,
+                        temp / f"overlay_{index}.png",
+                        scene_index=index,
+                        visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
+                    )
+                source_clip = clip if clip is not None else agnes_clip
                 make_video_segment_from_clip(
-                    clip, overlay, audio, segment, duration,
+                    source_clip, overlay, audio, segment, duration,
                     scene_index=index,
                     visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
                 )

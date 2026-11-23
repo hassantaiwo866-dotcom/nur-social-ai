@@ -29,10 +29,10 @@ The provider adapters are implemented and unit-tested independently. The next in
 
 ## Cloudflare Workers AI — free-plan image generation
 
-- Agnes is not currently integrated. It remains a candidate pending a verified free-key smoke test and a check of current model pricing in the platform console. Do not infer that every Agnes model is free: `agnes-video-2.5` is listed as paid, while `agnes-video-2.5-flash` is the temporary free-price candidate. Replicate/MiniMax remains excluded.
-- The only currently integrated visual AI API is Cloudflare Workers AI FLUX.1 Schnell: `@cf/black-forest-labs/flux-1-schnell`. Agnes investigation does not change production provider selection yet.
+- Agnes Video 2.5 Flash has a separate gated adapter on this feature branch; it is not an automatic fallback and is not yet connected to production scene assembly. The paid `agnes-video-2.5` model is explicitly excluded. Replicate/MiniMax remains excluded.
+- The Cloudflare adapter on this feature branch adds FLUX.2 Klein 4B (`@cf/black-forest-labs/flux-2-klein-4b`) as the image-generation path used by the cinematic generator. FLUX.1 Schnell remains available as a separately callable legacy adapter; it is not an automatic fallback. Agnes video is a separate provider adapter.
 - Cloudflare documents a shared allowance of 10,000 Neurons per day on Workers Free, resetting at 00:00 UTC. Workers Free rejects requests after the allowance is exhausted. Workers Paid can bill usage above the free allocation, so Nūr requires the account to remain on **Workers Free**; do not enable this integration on Workers Paid.
-- The model is priced at 4.80 Neurons per 512x512 tile plus 9.60 Neurons per inference step. Nūr requests four steps and limits generation to five images per Python process. Actual daily output depends on image dimensions and other Workers AI use in the same account.
+- Legacy FLUX.1 Schnell is priced at 4.80 Neurons per 512x512 tile plus 9.60 Neurons per inference step. Its existing adapter requests four steps. FLUX.2 Klein 4B has separate pricing documented below. Both share the five-image per-process cap; actual daily output depends on dimensions and other Workers AI use in the same account.
 - The API is disabled by default. After account verification, configure Actions secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, then repository variables `CLOUDFLARE_FREE_PLAN_CONFIRMED=yes` and `ENABLE_CLOUDFLARE_IMAGE_GENERATION=true`.
 - The adapter validates returned images, enforces the five-image process cap and has no paid fallback. On provider error or quota exhaustion, the generator continues to Pixabay, Wikimedia Commons and original local illustration.
 - Adapter tests use mocked responses only. No live account, API token, quota or generated output has been verified.
@@ -50,5 +50,69 @@ Official references:
 - Public Agnes reference tables show free/default image request-rate limits by resolution (1K: 20 executable RPM; 2K: 10; 3K: 1; 4K: 1) and free/default video at 1 executable RPM. These are rate limits, not a published daily generation allowance. No reliable free-tier daily image/video quota was found in the public official material reviewed.
 - An independent free-tier tracker checked 6 November 2026 reports free access to `agnes-image-2.5-flash` and temporary free access to `agnes-video-2.5-flash`, no card required, with video limited to about one effective request per minute. This is secondary evidence, not a guarantee or contract.
 - API base: `https://apihub.agnes-ai.com/v1`; auth: `Authorization: Bearer <AGNES_API_KEY>`. Official integration instructions: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models. Official site: https://agnes-ai.com/.
-- Current Nūr status: Agnes adapter and production calls are not present. Do not restore/enable them until an account's free access and $0 model pricing have been checked and a minimal test has succeeded without payment details or billing exposure.
-- Next validation: user creates an Agnes account/key privately; check the model price and key type in the platform console; test one image and one 4-second 720P video, record sanitized status/usage only, and stop on any payment-required or non-zero-price response. Never ask the user to paste the key into chat or commit it.
+- Current Nūr status: `agnes_video.py` implements one-video text-to-video creation, polling by `video_id` + `model_name`, and MP4 download. It is disabled unless both `ENABLE_AGNES_VIDEO_GENERATION=true` and `AGNES_VIDEO_FREE_PRICE_CONFIRMED=yes` are set, and `AGNES_API_KEY` is present. It has a one-video process cap, defaults to 4 seconds, fixes output at 720P, and never selects the paid model or retries a paid route. The confirmation variable is an operator attestation, not an automated billing guarantee.
+- Tests mock the HTTP API. They verify the model allowlist, opt-in, free-price gate, request cap, polling and basic MP4 validation. They do not verify the user's API key, account eligibility, price, quota, queue availability, or real generated video.
+- The adapter is not wired into `nur_generator.py` yet. Before production wiring or a live request, verify the exact model price is still $0.00 in the authenticated Agnes Platform console and confirm the existing key has free access. Stop if payment is required or any non-zero price appears. Never ask the user to paste the key into chat or commit it.
+
+
+## FLUX.2 Klein 4B integration — feature branch
+
+- Model: `@cf/black-forest-labs/flux-2-klein-4b`; endpoint uses Cloudflare Workers AI REST API.
+- The Klein REST endpoint requires multipart form data, including when no reference images are supplied. The adapter sends prompt, width and height as multipart fields.
+- Klein uses a fixed four-step inference process; Nūr does not send a configurable `steps` field.
+- Supports up to four reference images. Each reference image must be smaller than 512x512. The adapter validates this locally before making a request.
+- Output dimensions are bounded to 256–1920px per side. Nūr's current photo pipeline enforces at least 512px per side to meet its image validation rules.
+- The existing Cloudflare opt-in, explicit Workers Free confirmation, credential checks and five-image per-process cap are shared with FLUX.1 Schnell. The adapter never attempts paid fallback. If generation fails or the shared Workers AI free allowance is exhausted, the pipeline continues through its existing stock/local-illustration fallbacks.
+- The adapter is disabled by default. Existing repository secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` are required, along with repository variables `CLOUDFLARE_FREE_PLAN_CONFIRMED=yes` and `ENABLE_CLOUDFLARE_IMAGE_GENERATION=true`.
+- Unit tests use mocked HTTP responses. They do not verify the live Cloudflare credentials, actual account quota, generated image quality or production cost. A live smoke test requires a deliberate, separately approved generation.
+- Pricing is not zero-cost per image: the current Cloudflare pricing table lists Klein 4B at 5.37 Neurons per 512x512 input tile and 26.05 Neurons per 512x512 output tile. Workers Free includes a shared daily 10,000-Neuron allowance. Check current account usage before enabling production runs.
+
+Official references:
+- FLUX.2 Klein 4B API and multipart/reference-image requirements: https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/
+- Workers AI pricing and free allowance: https://developers.cloudflare.com/workers-ai/platform/pricing/
+
+
+## Agnes Video 2.5 Flash adapter — feature branch
+
+- Model allowlist: `agnes-video-2.5-flash` only. The paid `agnes-video-2.5` model is never selected.
+- Create endpoint: `POST https://apihub.agnes-ai.com/v1/videos`; poll endpoint: `GET https://apihub.agnes-ai.com/agnesapi?video_id=<VIDEO_ID>&model_name=agnes-video-2.5-flash`.
+- The request supports text-to-video and reference-image video, one output, 720P, 9:16 by default, and 4 seconds by default. The supported duration range is 4–12 seconds. Reference mode accepts up to five publicly accessible HTTPS image URLs and uses Agnes `<Picture N>` prompt references.
+- The adapter is disabled by default and requires `ENABLE_AGNES_VIDEO_GENERATION=true`, `AGNES_VIDEO_FREE_PRICE_CONFIRMED=yes`, and the existing `AGNES_API_KEY` secret. Optional `AGNES_BASE_URL` must use HTTPS and end in `/v1`.
+- The free-price confirmation is deliberately manual. Agnes currently describes the Flash price as a limited-time $0/sec promotion; promotions, access, rate limits, and queue availability can change. A successful API key or mocked test does not prove that a user's account is free.
+- A hard cap allows one video per Python process. The adapter does not automatically retry video creation, switch to the paid model, or fall back to another paid provider. It polls the asynchronous task and downloads only a secure HTTPS MP4 result. The earlier URL-reference limitation is superseded by the Day 4 inline Base64 first-frame handoff described below.
+- Unit tests use mocked responses only. No live Agnes API request or video generation has been performed. Production scene assembly remains opt-in and falls back to local FFmpeg still-motion if Agnes is unavailable.
+
+Official references:
+- Agnes integration skill: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models
+- Agnes model catalogue: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md
+- Agnes platform: https://platform.agnes-ai.com/
+
+
+## Day 4 — direct inline image-to-video handoff
+
+### Design
+- Nūr-generated FLUX images remain local until the video stage.
+- `scene_video_provider.py` reads the selected local PNG/JPEG/WebP image, enforces a 10 MiB maximum, Base64-encodes it, and passes it to Agnes Video 2.5 Flash using `first_frame` with `mode: img2video`.
+- No public URL, temporary hosting, storage account, bucket, signed URL, or R2 credential is required.
+- Existing stock video remains preferred; Agnes is opt-in; local FFmpeg still-motion is the fallback.
+
+### Safety limits
+- Disabled unless `ENABLE_AGNES_VIDEO_GENERATION=true` and the existing free-price confirmation is present in the Agnes adapter.
+- Maximum image size is 10 MiB; accepted types are PNG, JPEG and WebP.
+- Base64 image bytes are included in the HTTPS API request and are not persisted by the bridge as a separate upload.
+- The existing one-video-per-process cap remains; no paid model or paid fallback is used.
+- Tests mock the provider API. No live Agnes request, account pricing, or generated video has been verified.
+
+### Official reference
+- Agnes Video API reference: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models
+- Model catalogue: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md
+
+
+## Day 5 — canonical brand tokens
+
+- Added `brand_tokens.py` as the single source of truth for Nūr Media's palette and wordmark/tagline constants.
+- Palette: primary emerald `#0B5D3B`, deep forest `#064E3B`, near-black `#080808`, warm ivory `#F5F0E1`, muted gold `#D4AF37`, earth bronze `#A68A64`, charcoal `#1C1C1C`.
+- `media_quality.py` and `nur_generator.py` now import these tokens instead of maintaining duplicated colour definitions.
+- The brand system does not recolour source photography or footage; colour remains in graphic overlays, typography and accents.
+- Added tests for canonical hex and RGB values and invalid palette lookups.
+- No API, dependency, credential, generation cost or publishing behaviour changed.

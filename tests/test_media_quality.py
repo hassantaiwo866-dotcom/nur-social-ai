@@ -99,6 +99,8 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("0B5D3B", a)
         self.assertIn("y=151", a)
         self.assertIn("y=1435", b)
+        self.assertIn("min(t/", a)
+        self.assertIn("min(t/", b)
         self.assertNotEqual(a, b)
 
     def test_voice_audio_filter_has_polish_and_fades(self):
@@ -185,3 +187,87 @@ class MotionAccentCompatibilityTests(unittest.TestCase):
             nur_generator.make_video_segment("frame.jpg", "voice.mp3", "out.mp4", 4.0, scene_index=0, movement="subtle tilt down")
         video_filter = run.call_args.args[0][run.call_args.args[0].index("-vf") + 1]
         self.assertIn("y='(ih-ih/zoom)*(0.3+(0.62-0.3)*on/", video_filter)
+
+
+
+class TransitionSafetyTests(unittest.TestCase):
+    @patch("media_quality._duration", side_effect=[4.0, 4.0])
+    @patch("media_quality.subprocess.run")
+    def test_unknown_transition_falls_back_to_fade(self, run, duration):
+        from media_quality import join_video_segments
+        run.return_value.returncode = 0
+        with tempfile.TemporaryDirectory() as folder:
+            paths = []
+            for name in ("one.mp4", "two.mp4"):
+                path = Path(folder) / name
+                path.write_bytes(b"clip")
+                paths.append(path)
+            join_video_segments(paths, Path(folder) / "out.mp4", transitions=["not-a-transition"])
+        graph = run.call_args.args[0][run.call_args.args[0].index("-filter_complex") + 1]
+        self.assertIn("transition=fade", graph)
+        self.assertNotIn("transition=not-a-transition", graph)
+
+    @patch("media_quality._duration", side_effect=[4.0, 4.0])
+    @patch("media_quality.subprocess.run")
+    def test_soft_cut_alias_is_normalized_to_fade(self, run, duration):
+        from media_quality import join_video_segments
+        run.return_value.returncode = 0
+        with tempfile.TemporaryDirectory() as folder:
+            paths = []
+            for name in ("one.mp4", "two.mp4"):
+                path = Path(folder) / name
+                path.write_bytes(b"clip")
+                paths.append(path)
+            join_video_segments(paths, Path(folder) / "out.mp4", transitions=["soft_cut"])
+        graph = run.call_args.args[0][run.call_args.args[0].index("-filter_complex") + 1]
+        self.assertIn("transition=fade", graph)
+
+    @patch("media_quality._duration", side_effect=[0.2, 4.0])
+    @patch("media_quality.subprocess.run")
+    def test_short_segment_is_rejected_before_ffmpeg(self, run, duration):
+        from media_quality import join_video_segments
+        with tempfile.TemporaryDirectory() as folder:
+            paths = []
+            for name in ("one.mp4", "two.mp4"):
+                path = Path(folder) / name
+                path.write_bytes(b"clip")
+                paths.append(path)
+            with self.assertRaisesRegex(ValueError, "too short"):
+                join_video_segments(paths, Path(folder) / "out.mp4", transition=0.35)
+        run.assert_not_called()
+
+
+
+class VoiceAudioDurationSafetyTests(unittest.TestCase):
+    def test_negative_duration_is_clamped_to_minimum(self):
+        from media_quality import voice_audio_filter
+        filters = voice_audio_filter(-3.0)
+        self.assertIn("afade=t=out:st=0.090:d=0.15", filters)
+
+    def test_non_finite_duration_is_rejected(self):
+        from media_quality import voice_audio_filter
+        for duration in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(duration=duration):
+                with self.assertRaisesRegex(ValueError, "finite"):
+                    voice_audio_filter(duration)
+
+
+
+class AnimatedBrandAccentTests(unittest.TestCase):
+    def test_accent_expression_moves_in_opposite_directions_by_scene(self):
+        from nur_generator import motion_accent_filter
+        even = motion_accent_filter(0, duration=4)
+        odd = motion_accent_filter(1, duration=4)
+        self.assertIn("min(t/4.000,1)", even)
+        self.assertIn("80+180*min(t/4.000,1)", even)
+        self.assertIn("800-180*min(t/4.000,1)", odd)
+        self.assertIn("color=0B5D3B@1", even)
+
+    def test_accent_duration_is_bounded_and_invalid_values_are_safe(self):
+        from nur_generator import motion_accent_filter
+        short = motion_accent_filter(0, duration=0.01)
+        long = motion_accent_filter(0, duration=100)
+        invalid = motion_accent_filter(0, duration=float("nan"))
+        self.assertIn("min(t/0.250,1)", short)
+        self.assertIn("min(t/4.000,1)", long)
+        self.assertIn("min(t/4.000,1)", invalid)
