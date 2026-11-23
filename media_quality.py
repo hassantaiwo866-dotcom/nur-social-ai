@@ -5,6 +5,7 @@ pretending that generated geometric shapes are photographs.
 """
 from pathlib import Path
 import subprocess
+import math
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 from brand_tokens import PRIMARY_EMERALD, DEEP_FOREST, WARM_IVORY, MUTED_GOLD, CHARCOAL
@@ -192,7 +193,10 @@ def _duration(path):
 
 def voice_audio_filter(duration):
     """Polish spoken narration without adding artificial music or masking speech."""
-    duration = max(0.25, float(duration))
+    duration = float(duration)
+    if not math.isfinite(duration):
+        raise ValueError("Voiceover duration must be finite.")
+    duration = max(0.25, duration)
     fade_out_start = max(0.08, duration - 0.16)
     return (
         "highpass=f=75,lowpass=f=11000,"
