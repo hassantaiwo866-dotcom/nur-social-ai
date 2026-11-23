@@ -88,32 +88,21 @@ Official references:
 - Agnes platform: https://platform.agnes-ai.com/
 
 
-## Day 4 — private temporary image bridge (Cloudflare R2)
+## Day 4 — direct inline image-to-video handoff
 
 ### Design
-- Generated FLUX images remain local until the video stage needs a reference image.
-- `r2_temp_storage.py` uploads one generated PNG, JPEG or WebP to a **private** R2 bucket using the S3-compatible API.
-- It creates a presigned HTTPS `GET` URL valid for 10 minutes by default (hard maximum 15 minutes), then yields that URL to the caller.
-- The caller must keep the context open while Agnes creates and completes the video task. The context attempts to delete the uploaded R2 object after the caller exits, including when the Agnes call raises.
-- Agnes receives a signed URL to one object, not bucket credentials. No public bucket or custom public domain is required. Treat the URL as a bearer token and never log or publish it.
-- R2 `DeleteObject` is listed as a free operation. Configure a bucket lifecycle expiration rule for the `nur-media-temp/` prefix (for example, one day) as crash-recovery cleanup if the Python process exits before its `finally` cleanup runs.
+- Nūr-generated FLUX images remain local until the video stage.
+- `scene_video_provider.py` reads the selected local PNG/JPEG/WebP image, enforces a 10 MiB maximum, Base64-encodes it, and passes it to Agnes Video 2.5 Flash using `first_frame` with `mode: img2video`.
+- No public URL, temporary hosting, storage account, bucket, signed URL, or R2 credential is required.
+- Existing stock video remains preferred; Agnes is opt-in; local FFmpeg still-motion is the fallback.
 
 ### Safety limits
-- Disabled unless `ENABLE_R2_TEMP_STORAGE=true` and `R2_FREE_TIER_CONFIRMED=yes`.
-- Required secrets/configuration: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_BUCKET_NAME`. Use an R2 token scoped to this one bucket with Object Read & Write; do not reuse the Workers AI token.
+- Disabled unless `ENABLE_AGNES_VIDEO_GENERATION=true` and the existing free-price confirmation is present in the Agnes adapter.
 - Maximum image size is 10 MiB; accepted types are PNG, JPEG and WebP.
-- Signed URL lifetime is constrained to 60–900 seconds; default 600 seconds.
-- R2 objects use random keys under `nur-media-temp/`, private/no-store cache headers and metadata marking the purpose as an Agnes reference.
-- `scene_video_provider.py` now connects the private R2 context to the Agnes adapter, and `nur_generator.py` calls it only for Nūr-generated still images when both provider switches are enabled. The signed-URL context stays open for the full Agnes create/poll/download operation, then attempts object deletion. Existing Pixabay stock-video selection remains first; if Agnes/R2 is disabled or fails, the pipeline uses its existing local FFmpeg still-motion path.
-- Unit tests mock R2 and Agnes. They cover storage cleanup, feature gates, image size/type validation, URL lifetime, signed-URL context lifetime, duration bounds and safe local-motion fallback. No R2 bucket, credentials, uploads, real signed URLs, or live Agnes jobs have been configured or tested.
+- Base64 image bytes are included in the HTTPS API request and are not persisted by the bridge as a separate upload.
+- The existing one-video-per-process cap remains; no paid model or paid fallback is used.
+- Tests mock the provider API. No live Agnes request, account pricing, or generated video has been verified.
 
-### R2 account cost controls
-Cloudflare's published Standard R2 free tier currently includes 10 GB-month storage, 1 million Class A operations and 10 million Class B operations per month, with no egress charges. Usage above the included allowance is billed. Keep generated reference images small, cap uploads, monitor usage, and do not enable R2 billing or any paid overage intentionally. Pricing can change; check the dashboard before activating.
-- Public R2 buckets are not needed and must remain disabled.
-- Do not upload user-submitted/private personal images to this bridge without a separate explicit consent and retention design.
-
-Official references:
-- R2 pricing: https://developers.cloudflare.com/r2/pricing/
-- Presigned URLs and bearer-token security: https://developers.cloudflare.com/r2/api/s3/presigned-urls/
-- R2 API tokens: https://developers.cloudflare.com/r2/api/tokens/
-- R2 lifecycle rules: https://developers.cloudflare.com/r2/buckets/object-lifecycles/
+### Official reference
+- Agnes Video API reference: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models
+- Model catalogue: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md
