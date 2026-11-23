@@ -54,3 +54,20 @@ class OutputValidationTests(unittest.TestCase):
             runner.assert_not_called()
 
 if __name__=="__main__": unittest.main()
+
+
+
+    def test_invalid_frame_rate_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaisesRegex(RuntimeError, "frame rate"):
+                validate_media_outputs(
+                    self.make_image(d), self.make_video(d),
+                    self.runner(payload(fps="0/0")),
+                )
+
+    def test_ffprobe_nonzero_exit_fails(self):
+        with tempfile.TemporaryDirectory() as d:
+            runner=self.runner(payload())
+            runner.return_value.returncode=1
+            with self.assertRaisesRegex(RuntimeError, "ffprobe"):
+                validate_media_outputs(self.make_image(d), self.make_video(d), runner)
