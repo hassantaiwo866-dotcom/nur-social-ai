@@ -21,6 +21,7 @@ from visual_providers import generate_gemini_image, search_pixabay_photo, search
 from cloudflare_visuals import generate_image as generate_cloudflare_image
 from visual_prompting import compose_generation_prompt, build_stock_search_query
 from visual_continuity import scene_sequence_direction
+from storytelling import build_audience_connection_direction
 
 
 ROOT = Path(__file__).resolve().parent
@@ -391,7 +392,8 @@ def generate_editorial_plan(brand, history):
         "Short video storytelling must use Hook → Open Loop → Development → Mid-video Re-hook → Payoff. "
         "The four scenes must respectively establish curiosity, develop the idea, renew interest, "
         "and resolve with a practical compassionate payoff. Never use shame, guilt, fear, "
-        "exaggerated claims or manipulative cliffhangers. Return valid JSON only, without Markdown fences."
+        "exaggerated claims or manipulative cliffhangers. Create audience recognition, a real tension, "
+        "a compassionate reframe, and one achievable action. Return valid JSON only, without Markdown fences."
     )
     user_prompt = f"""
 Create one original Nūr social-media content package.
@@ -406,6 +408,7 @@ Use Hook/Open Loop in scene 1, Development in scene 2, Re-hook in scene 3, and P
 Add video.visual_style selected from cinematic_documentary, tactile_editorial_collage, or hybrid_documentary_collage.
 Default to calm premium cinematic documentary with restrained tactile accents. Scene prompts must describe actual footage/image content, not graphics.
 Make the four visual scenes noticeably different, realistic and cinematic. Avoid generic gradients, empty green backgrounds and abstract shapes.
+{build_audience_connection_direction()}
 """
 
     def validate_plan(plan):
