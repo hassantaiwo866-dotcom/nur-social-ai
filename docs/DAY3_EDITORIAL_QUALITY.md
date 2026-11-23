@@ -18,3 +18,7 @@ The evaluator returns a 0–100 advisory score, per-check results, and warnings.
 - Human review remains mandatory.
 - A score is not a substitute for checking factual accuracy, emotional sensitivity, visual relevance, rights, audio, or product claims.
 - No provider calls, paid services, dependencies, or publishing actions are introduced.
+
+
+## Pipeline integration
+The generation pipeline evaluates the editorial plan immediately after creation, prints the advisory score and any warnings, and saves the complete report under `editorial_quality` in `latest_post.json`. This is separate from technical QA, does not block generation, and does not modify the plan.
