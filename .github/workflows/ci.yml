@@ -2,29 +2,7 @@ name: Nūr Social AI checks
 
 on:
   push:
-    branches:
-      - stabilise/day-1-provider-media-resilience
-      - day3/production-run-manifest
-      - day4/r2-temporary-image-bridge
-      - day5/brand-token-system
-      - day6/transition-safety-tests
-      - day7/audio-duration-guard
-      - day8/animated-brand-accent
-      - day9/output-validation
-      - day10/production-integration-review
   pull_request:
-    branches:
-      - main
-      - stabilise/day-1-provider-media-resilience
-      - day3/production-run-manifest
-      - feature/agnes-flash-safe-integration
-      - day4/r2-temporary-image-bridge
-      - day5/brand-token-system
-      - day6/transition-safety-tests
-      - day7/audio-duration-guard
-      - day8/animated-brand-accent
-      - day9/output-validation
-      - day10/production-integration-review
 
 permissions:
   contents: read

@@ -31,3 +31,9 @@ Deterministic tests cover stage updates, failure recording, and atomic file repl
 - Corrected validation error messages to render line breaks rather than literal escape sequences.
 - Tests remain local/mock-based and do not trigger AI generation or provider charges.
 - Final real-world production run, visual/audio inspection, and phone review remain outstanding.
+
+
+## Day 10 fix — test syntax
+
+- Corrected malformed test context-manager closures and moved test methods into the test class before the `unittest.main()` guard.
+- This ensures the validation regression tests compile and are discoverable by unittest.

@@ -607,7 +607,10 @@ def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary", du
     travel = 180.0
     start_x = 80 if int(scene_index) % 2 == 0 else 800
     direction = 1 if int(scene_index) % 2 == 0 else -1
-    x = f"{start_x}+{direction}*{travel}*min(t/{travel_seconds:.3f},1)"
+    if direction > 0:
+        x = f"{start_x}+{travel:g}*min(t/{travel_seconds:.3f},1)"
+    else:
+        x = f"{start_x}-{travel:g}*min(t/{travel_seconds:.3f},1)"
     return f"drawbox=x='{x}':y={y}:w=120:h=5:color=0B5D3B@1:t=fill"
 
 
@@ -848,7 +851,7 @@ def run_qa(image_path, video_path, plan):
             failures.append(f"Potentially shaming language found: {term}")
 
     if failures:
-        raise RuntimeError("Quality checks failed:\\n- " + "\\n- ".join(failures))
+        raise RuntimeError("Quality checks failed:\n- " + "\n- ".join(failures))
 
     return {
         "status": "passed",
