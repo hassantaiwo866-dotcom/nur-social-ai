@@ -18,7 +18,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from media_quality import enhance_photo, render_scene_frame, render_scene_overlay, render_editorial_poster, join_video_segments, voice_audio_filter
 from visual_providers import generate_gemini_image, search_pixabay_photo, search_pixabay_video
-from cloudflare_visuals import generate_image as generate_cloudflare_image
+from cloudflare_visuals import generate_klein_image as generate_cloudflare_image
 from visual_prompting import compose_generation_prompt, build_stock_search_query
 from visual_continuity import scene_sequence_direction
 from storytelling import build_audience_connection_direction
@@ -333,13 +333,13 @@ def generate_photo(prompt,width,height,destination,scene=None):
     if os.getenv("ENABLE_CLOUDFLARE_IMAGE_GENERATION", "").strip().lower() in ("1", "true", "yes"):
         try:
             print("Generating an original image with Cloudflare Workers AI (free-plan guarded)...")
-            path = generate_cloudflare_image(generation_prompt, destination)
+            path = generate_cloudflare_image(generation_prompt, destination, width=width, height=height)
             ASSET_ATTRIBUTIONS.append({
                 "provider": "Cloudflare Workers AI",
-                "model": "@cf/black-forest-labs/flux-1-schnell",
+                "model": "@cf/black-forest-labs/flux-2-klein-4b",
                 "asset_id": path.name, "creator": "AI-generated", "source_page": None,
                 "license": "FLUX.1 Schnell; review applicable model licence",
-                "license_url": "https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/",
+                "license_url": "https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/",
                 "media_type": "ai_generated_image", "review_required": True,
             })
             return enhance_photo(path)
