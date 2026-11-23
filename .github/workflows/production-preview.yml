@@ -1,0 +1,86 @@
+name: Nūr production preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_preview:
+        description: "I understand this creates one private review package and does not publish it"
+        required: true
+        type: boolean
+        default: false
+      source_ref:
+        description: "Source branch to render"
+        required: true
+        type: choice
+        options:
+          - day9/output-validation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nur-production-preview
+  cancel-in-progress: false
+
+jobs:
+  production-preview:
+    if: inputs.confirm_preview == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the reviewed production source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Compile source and tests
+        run: python -m compileall -q .
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Generate one private review package
+        env:
+          # Deliberately provide no API credentials. The run uses the local
+          # editorial fallback, Commons/local artwork, Edge TTS and FFmpeg.
+          NUR_FREE_ONLY: "true"
+          GEMINI_API_KEY: ""
+          GROQ_API_KEY: ""
+          PIXABAY_API_KEY: ""
+          ENABLE_GEMINI_IMAGE_GENERATION: "false"
+          ENABLE_CLOUDFLARE_IMAGE_GENERATION: "false"
+          CLOUDFLARE_FREE_PLAN_CONFIRMED: ""
+          CLOUDFLARE_ACCOUNT_ID: ""
+          CLOUDFLARE_API_TOKEN: ""
+          ENABLE_AGNES_VIDEO_GENERATION: "false"
+          AGNES_VIDEO_FREE_PRICE_CONFIRMED: ""
+          AGNES_API_KEY: ""
+          AGNES_BASE_URL: ""
+          NUR_APPROVED: ""
+        run: python nur_generator.py
+
+      - name: Upload review package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nur-production-preview-${{ github.run_number }}
+          path: output/
+          if-no-files-found: warn
+          retention-days: 7
