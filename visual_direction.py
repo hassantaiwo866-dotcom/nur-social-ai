@@ -124,6 +124,11 @@ def normalise_video_visual_direction(video: dict[str, Any]) -> dict[str, Any]:
                 )
             if character_id not in cleaned_ids:
                 cleaned_ids.append(character_id)
+        if cleaned_ids and scene["visual_source"] == "designed_visual":
+            raise ValueError(
+                f"Scene {index + 1} cannot assign a recurring character to designed_visual; "
+                "the current local illustration renderer does not reproduce character identity."
+            )
         scene["character_ids"] = cleaned_ids
 
     return video
