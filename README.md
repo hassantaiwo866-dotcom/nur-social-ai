@@ -40,3 +40,8 @@ See [visual provider system](docs/VISUAL_PROVIDER_SYSTEM.md), [Day 1 stabilisati
 The Day 4 feature branch sends a Nūr-generated scene image to Agnes Video 2.5 Flash as inline Base64 in the `first_frame` field (`mode: img2video`). No temporary hosting, public URL, storage subscription, or R2 credentials are required. Existing stock-video footage remains preferred; Agnes is optional and local FFmpeg still-motion remains the fallback.
 
 Live use remains disabled until configured. It requires the existing `AGNES_API_KEY` secret and explicit opt-in plus confirmation that the Flash model is currently $0. No paid model fallback is permitted. Images are limited to 10 MiB and PNG/JPEG/WebP. The API receives image bytes directly; no image hosting is created. Tests use mocked requests only; no live Agnes generation has been performed.
+
+
+## Day 5 — canonical brand tokens
+
+Nūr Media's graphic palette is centralized in `brand_tokens.py`: primary emerald `#0B5D3B`, deep forest `#064E3B`, near-black `#080808`, warm ivory `#F5F0E1`, muted gold `#D4AF37`, earth bronze `#A68A64`, and charcoal `#1C1C1C`. Photography and video retain natural colour; brand colour is used in overlays, type and graphic accents.

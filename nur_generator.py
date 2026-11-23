@@ -27,6 +27,7 @@ from editorial_quality import evaluate_editorial_plan
 from human_review import build_human_review_checklist
 from production_reliability import new_run_manifest, update_stage, record_failure, save_run_manifest
 from scene_video_provider import generate_agnes_scene_clip
+from brand_tokens import PALETTE_HEX, WORDMARK, TAGLINE
 
 
 ROOT = Path(__file__).resolve().parent
@@ -38,17 +39,14 @@ WIDTH = 1080
 HEIGHT = 1920
 FPS = 24
 
-DEEP_FOREST = "#064E3B"
-PRIMARY_EMERALD = "#0B5D3B"
-LIVING_GREEN = "#0B5D3B"
-NEAR_BLACK = "#080808"
-WARM_IVORY = "#F5F0E1"
-MUTED_GOLD = "#D4AF37"
-EARTH_BRONZE = "#A68A64"
-CHARCOAL = "#1C1C1C"
-
-WORDMARK = "Nūr"
-TAGLINE = "Build the person you want to become."
+DEEP_FOREST = PALETTE_HEX["deep_forest"]
+PRIMARY_EMERALD = PALETTE_HEX["primary_emerald"]
+LIVING_GREEN = PRIMARY_EMERALD
+NEAR_BLACK = PALETTE_HEX["near_black"]
+WARM_IVORY = PALETTE_HEX["warm_ivory"]
+MUTED_GOLD = PALETTE_HEX["muted_gold"]
+EARTH_BRONZE = PALETTE_HEX["earth_bronze"]
+CHARCOAL = PALETTE_HEX["charcoal"]
 
 VIDEO_CATEGORIES = [
     "Awareness and digital habits",

@@ -106,3 +106,13 @@ Official references:
 ### Official reference
 - Agnes Video API reference: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models
 - Model catalogue: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md
+
+
+## Day 5 — canonical brand tokens
+
+- Added `brand_tokens.py` as the single source of truth for Nūr Media's palette and wordmark/tagline constants.
+- Palette: primary emerald `#0B5D3B`, deep forest `#064E3B`, near-black `#080808`, warm ivory `#F5F0E1`, muted gold `#D4AF37`, earth bronze `#A68A64`, charcoal `#1C1C1C`.
+- `media_quality.py` and `nur_generator.py` now import these tokens instead of maintaining duplicated colour definitions.
+- The brand system does not recolour source photography or footage; colour remains in graphic overlays, typography and accents.
+- Added tests for canonical hex and RGB values and invalid palette lookups.
+- No API, dependency, credential, generation cost or publishing behaviour changed.
