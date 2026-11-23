@@ -593,13 +593,22 @@ def probe_duration(path):
     return float(output)
 
 
-def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary"):
-    """Return a short travelling Nūr emerald accent line for the scene."""
+def motion_accent_filter(scene_index=0, visual_style="cinematic_documentary", duration=4.0):
+    """Create a restrained emerald accent that travels horizontally during the scene."""
     y = 1435 if visual_style in ("tactile_editorial_collage", "hybrid_documentary_collage") else 151
-    # Fixed coordinates are portable across FFmpeg drawbox implementations.
-    # Alternate sides by scene; reliability takes priority over line animation.
-    x = 80 if int(scene_index) % 2 == 0 else 810
-    return f"drawbox=x={x}:y={y}:w=190:h=5:color=0B5D3B@1:t=fill"
+    try:
+        seconds = float(duration)
+    except (TypeError, ValueError):
+        seconds = 4.0
+    if not math.isfinite(seconds):
+        seconds = 4.0
+    seconds = min(12.0, max(0.25, seconds))
+    travel_seconds = min(4.0, seconds)
+    travel = 180.0
+    start_x = 80 if int(scene_index) % 2 == 0 else 800
+    direction = 1 if int(scene_index) % 2 == 0 else -1
+    x = f"{start_x}+{direction}*{travel}*min(t/{travel_seconds:.3f},1)"
+    return f"drawbox=x='{x}':y={y}:w=120:h=5:color=0B5D3B@1:t=fill"
 
 
 def make_video_segment_from_clip(
@@ -617,7 +626,7 @@ def make_video_segment_from_clip(
         "[foreground_source]scale=1080:1920:force_original_aspect_ratio=decrease[foreground];"
         "[background][foreground]overlay=(W-w)/2:(H-h)/2[composed];"
         "[composed][1:v]overlay=0:0:format=auto,"
-        + motion_accent_filter(scene_index, visual_style)
+        + motion_accent_filter(scene_index, visual_style, duration)
         + ",format=yuv420p[motion]",
         "-map", "[motion]", "-map", "2:a",
         "-af", f"apad,{voice_audio_filter(duration)}", "-t", str(duration), "-r", str(FPS),
@@ -667,7 +676,7 @@ def make_video_segment(
             "d=1:s=1080x1920:fps=24,"
             "format=yuv420p"
         )
-        video_filter += "," + motion_accent_filter(scene_index)
+        video_filter += "," + motion_accent_filter(scene_index, duration=duration)
     else:
         video_filter = "scale=1080:1920," + motion_accent_filter(scene_index) + ",format=yuv420p"
 
