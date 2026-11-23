@@ -22,3 +22,18 @@ Deterministic tests cover stage updates, failure recording, and atomic file repl
 - QA now records validated media metadata in the package report. Failed validation stops packaging and publishing eligibility.
 - Added mocked ffprobe and temporary-image tests for valid output and malformed/missing/incorrect media cases.
 - Tests do not call external generation providers or create billable requests. A real render remains necessary for visual/audio human review.
+
+
+## Day 10 — final production integration review
+
+- Added integration tests for the QA gate: validated metadata is included, invalid media blocks QA, and basic shaming-language checks block review readiness.
+- Added regression cases for invalid frame rate and FFprobe non-zero exit.
+- Corrected validation error messages to render line breaks rather than literal escape sequences.
+- Tests remain local/mock-based and do not trigger AI generation or provider charges.
+- Final real-world production run, visual/audio inspection, and phone review remain outstanding.
+
+
+## Day 10 fix — test syntax
+
+- Corrected malformed test context-manager closures and moved test methods into the test class before the `unittest.main()` guard.
+- This ensures the validation regression tests compile and are discoverable by unittest.

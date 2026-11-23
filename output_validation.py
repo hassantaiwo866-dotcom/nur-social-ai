@@ -78,7 +78,7 @@ def validate_media_outputs(image_path, video_path, runner=subprocess.run):
         failures.append("Video duration metadata is invalid.")
 
     if failures:
-        raise RuntimeError("Media output validation failed:\\n- " + "\\n- ".join(failures))
+        raise RuntimeError("Media output validation failed:\n- " + "\n- ".join(failures))
 
     return {
         "status": "passed",

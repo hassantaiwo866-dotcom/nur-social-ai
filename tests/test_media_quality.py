@@ -259,7 +259,7 @@ class AnimatedBrandAccentTests(unittest.TestCase):
         even = motion_accent_filter(0, duration=4)
         odd = motion_accent_filter(1, duration=4)
         self.assertIn("min(t/4.000,1)", even)
-        self.assertIn("80+1*180", even)
+        self.assertIn("80+180*min(t/4.000,1)", even)
         self.assertIn("800-180*min(t/4.000,1)", odd)
         self.assertIn("color=0B5D3B@1", even)
 
