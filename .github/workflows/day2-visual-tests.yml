@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - stabilise/day-1-provider-media-resilience
+      - day3/production-run-manifest
     paths:
       - "**.py"
       - "requirements.txt"
