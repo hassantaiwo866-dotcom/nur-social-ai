@@ -20,21 +20,21 @@ def scene_defaults_for_beat(scene: dict) -> dict:
         "depth_treatment": "glass_tactile",
         "typography_treatment": "editorial_minimal",
     }
-    if "HOOK" in beat:
-        defaults.update(
-            camera_direction="Immediate visual detail or human moment; no establishing logo shot.",
-            movement="Purposeful, restrained push-in or movement that earns attention.",
-            visual_source="stock_video",
-            composition="full_frame",
-            depth_treatment="natural_cinematic",
-            typography_treatment="hyperbold_brutalist",
-        )
-    elif "RE-HOOK" in beat:
+    if "RE-HOOK" in beat:
         defaults.update(
             camera_direction="Change framing or subject detail to renew visual interest.",
             movement="Distinct but restrained movement; avoid repeating the previous shot.",
             visual_source="stock_video",
             composition="hybrid_editorial",
+            depth_treatment="natural_cinematic",
+            typography_treatment="hyperbold_brutalist",
+        )
+    elif "HOOK" in beat:
+        defaults.update(
+            camera_direction="Immediate visual detail or human moment; no establishing logo shot.",
+            movement="Purposeful, restrained push-in or movement that earns attention.",
+            visual_source="stock_video",
+            composition="full_frame",
             depth_treatment="natural_cinematic",
             typography_treatment="hyperbold_brutalist",
         )
