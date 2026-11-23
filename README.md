@@ -35,8 +35,8 @@ Commons metadata can be incomplete or unreliable. The pipeline accepts only iden
 See [visual provider system](docs/VISUAL_PROVIDER_SYSTEM.md), [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md), [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md) and [private Telegram review setup](docs/TELEGRAM_PRIVATE_REVIEW.md).
 
 
-## Day 4 — private temporary image handoff
+## Day 4 — direct image-to-video handoff
 
-The Day 4 feature branch connects Nūr-generated still images to Agnes through private Cloudflare R2 temporary storage. The pipeline uploads only the generated still for a scene, creates a short-lived signed HTTPS GET URL (10 minutes by default; 15-minute hard maximum), waits for Agnes to finish, then attempts to delete the object. If either provider is disabled or fails, the pipeline falls back to local FFmpeg still motion. Existing stock-video footage remains preferred.
+The Day 4 feature branch sends a Nūr-generated scene image to Agnes Video 2.5 Flash as inline Base64 in the `first_frame` field (`mode: img2video`). No temporary hosting, public URL, storage subscription, or R2 credentials are required. Existing stock-video footage remains preferred; Agnes is optional and local FFmpeg still-motion remains the fallback.
 
-Live use remains disabled until configured. It requires a private R2 bucket, a bucket-scoped R2 S3 API token, and the following GitHub Actions secrets: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`. Enable only after confirming current R2 free-tier limits, configuring a one-day lifecycle deletion rule for `nur-media-temp/`, and explicitly setting `R2_FREE_TIER_CONFIRMED=yes` and `ENABLE_R2_TEMP_STORAGE=true`. Do not create a public bucket. R2 and Agnes integration tests use mocked calls; no live bucket or upload has been created.
+Live use remains disabled until configured. It requires the existing `AGNES_API_KEY` secret and explicit opt-in plus confirmation that the Flash model is currently $0. No paid model fallback is permitted. Images are limited to 10 MiB and PNG/JPEG/WebP. The API receives image bytes directly; no image hosting is created. Tests use mocked requests only; no live Agnes generation has been performed.
