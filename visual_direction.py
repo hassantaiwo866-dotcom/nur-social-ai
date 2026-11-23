@@ -125,9 +125,12 @@ def normalise_video_visual_direction(video: dict[str, Any]) -> dict[str, Any]:
             if character_id not in cleaned_ids:
                 cleaned_ids.append(character_id)
         if cleaned_ids and scene["visual_source"] == "designed_visual":
-            raise ValueError(
-                f"Scene {index + 1} cannot assign a recurring character to designed_visual; "
-                "the current local illustration renderer does not reproduce character identity."
+            # The current local illustration is symbolic and cannot depict a
+            # recurring character. Prefer the still-image chain instead.
+            scene["visual_source"] = "generated_still"
+            scene["source_adjustment"] = (
+                "designed_visual changed to generated_still because this scene "
+                "references a recurring character"
             )
         scene["character_ids"] = cleaned_ids
 
@@ -168,6 +171,7 @@ def build_visual_direction_manifest(video: dict[str, Any]) -> dict[str, Any]:
             "depth_treatment": scene["depth_treatment"],
             "typography_treatment": scene["typography_treatment"],
             "character_ids": list(scene.get("character_ids", [])),
+            "source_adjustment": scene.get("source_adjustment"),
             "same_performer_unverified": bool(
                 scene.get("character_ids")
                 and scene["visual_source"] in ("stock_video", "stock_photo")
