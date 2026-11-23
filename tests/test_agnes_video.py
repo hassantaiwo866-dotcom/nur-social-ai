@@ -57,7 +57,7 @@ class AgnesVideoTests(unittest.TestCase):
                 {"video_id": "video-test", "model_name": "agnes-video-2.5-flash"},
             )
 
-    def test_reference_images_use_reference_mode(self):
+    def test_inline_base64_first_frame_uses_img2video_mode(self):
         with tempfile.TemporaryDirectory() as folder, self.env():
             session = Mock()
             created, polled, download = self.responses()
@@ -67,33 +67,19 @@ class AgnesVideoTests(unittest.TestCase):
                 agnes_video.generate_video(
                     "Animate the person naturally",
                     Path(folder) / "reference.mp4",
-                    reference_images=["https://assets.example.test/portrait.png"],
+                    first_frame_base64="aGVsbG8=",
                     session=session,
                 )
             payload = session.post.call_args.kwargs["json"]
-            self.assertEqual(payload["mode"], "reference")
-            self.assertEqual(payload["images"], ["https://assets.example.test/portrait.png"])
-            self.assertIn("<Picture 1>", payload["prompt"])
+            self.assertEqual(payload["mode"], "img2video")
+            self.assertEqual(payload["first_frame"], "aGVsbG8=")
 
-    def test_rejects_non_https_reference_before_request(self):
+    def test_rejects_empty_inline_frame_before_request(self):
         with self.env():
             session = Mock()
-            with self.assertRaisesRegex(ValueError, "public HTTPS"):
+            with self.assertRaisesRegex(ValueError, "non-empty Base64"):
                 agnes_video.generate_video(
-                    "Animate this", "unused.mp4",
-                    reference_images=["http://example.test/image.png"],
-                    session=session,
-                )
-            session.post.assert_not_called()
-
-    def test_rejects_more_than_five_reference_images(self):
-        with self.env():
-            session = Mock()
-            refs = [f"https://assets.example.test/{index}.png" for index in range(6)]
-            with self.assertRaisesRegex(ValueError, "at most five"):
-                agnes_video.generate_video(
-                    "Animate these", "unused.mp4",
-                    reference_images=refs, session=session,
+                    "Animate this", "unused.mp4", first_frame_base64="", session=session
                 )
             session.post.assert_not_called()
 
