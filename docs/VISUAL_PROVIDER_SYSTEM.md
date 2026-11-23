@@ -79,10 +79,30 @@ Official references:
 - The request supports text-to-video and reference-image video, one output, 720P, 9:16 by default, and 4 seconds by default. The supported duration range is 4–12 seconds. Reference mode accepts up to five publicly accessible HTTPS image URLs and uses Agnes `<Picture N>` prompt references.
 - The adapter is disabled by default and requires `ENABLE_AGNES_VIDEO_GENERATION=true`, `AGNES_VIDEO_FREE_PRICE_CONFIRMED=yes`, and the existing `AGNES_API_KEY` secret. Optional `AGNES_BASE_URL` must use HTTPS and end in `/v1`.
 - The free-price confirmation is deliberately manual. Agnes currently describes the Flash price as a limited-time $0/sec promotion; promotions, access, rate limits, and queue availability can change. A successful API key or mocked test does not prove that a user's account is free.
-- A hard cap allows one video per Python process. The adapter does not automatically retry video creation, switch to the paid model, or fall back to another paid provider. It polls the asynchronous task and downloads only a secure HTTPS MP4 result. Local FLUX image files cannot yet be passed directly: Agnes requires publicly accessible HTTPS reference URLs, and Nūr does not yet have an approved upload/hosting bridge for those files.
-- Unit tests use mocked responses only. No live Agnes API request or video generation has been performed. The adapter is not connected to production scene assembly yet.
+- A hard cap allows one video per Python process. The adapter does not automatically retry video creation, switch to the paid model, or fall back to another paid provider. It polls the asynchronous task and downloads only a secure HTTPS MP4 result. The earlier URL-reference limitation is superseded by the Day 4 inline Base64 first-frame handoff described below.
+- Unit tests use mocked responses only. No live Agnes API request or video generation has been performed. Production scene assembly remains opt-in and falls back to local FFmpeg still-motion if Agnes is unavailable.
 
 Official references:
 - Agnes integration skill: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models
 - Agnes model catalogue: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md
 - Agnes platform: https://platform.agnes-ai.com/
+
+
+## Day 4 — direct inline image-to-video handoff
+
+### Design
+- Nūr-generated FLUX images remain local until the video stage.
+- `scene_video_provider.py` reads the selected local PNG/JPEG/WebP image, enforces a 10 MiB maximum, Base64-encodes it, and passes it to Agnes Video 2.5 Flash using `first_frame` with `mode: img2video`.
+- No public URL, temporary hosting, storage account, bucket, signed URL, or R2 credential is required.
+- Existing stock video remains preferred; Agnes is opt-in; local FFmpeg still-motion is the fallback.
+
+### Safety limits
+- Disabled unless `ENABLE_AGNES_VIDEO_GENERATION=true` and the existing free-price confirmation is present in the Agnes adapter.
+- Maximum image size is 10 MiB; accepted types are PNG, JPEG and WebP.
+- Base64 image bytes are included in the HTTPS API request and are not persisted by the bridge as a separate upload.
+- The existing one-video-per-process cap remains; no paid model or paid fallback is used.
+- Tests mock the provider API. No live Agnes request, account pricing, or generated video has been verified.
+
+### Official reference
+- Agnes Video API reference: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models
+- Model catalogue: https://github.com/AgnesAI-Labs/skills/blob/main/agnes-ai-models/references/model_catalog.md

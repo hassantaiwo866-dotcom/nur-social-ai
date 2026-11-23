@@ -26,6 +26,7 @@ from storytelling import build_audience_connection_direction
 from editorial_quality import evaluate_editorial_plan
 from human_review import build_human_review_checklist
 from production_reliability import new_run_manifest, update_stage, record_failure, save_run_manifest
+from scene_video_provider import generate_agnes_scene_clip
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1019,10 +1020,30 @@ async def run_pipeline():
             await make_voiceover(scene["voiceover"], audio)
             duration = probe_duration(audio) + 0.6
             segment = temp / f"segment_{index}.mp4"
+            agnes_clip = None
 
-            if clip is not None:
+            # Animate only Nūr-generated stills. Existing stock video remains the
+            # first choice, and the local FFmpeg still-image path remains fallback.
+            if clip is None and photo is not None:
+                agnes_clip = generate_agnes_scene_clip(
+                    photo,
+                    scene["image_prompt"],
+                    temp / f"agnes_scene_{index}.mp4",
+                    duration,
+                    logger=lambda message: print(f"Scene {index + 1}: {message}"),
+                )
+
+            if clip is not None or agnes_clip is not None:
+                if overlay is None:
+                    overlay = render_scene_overlay(
+                        scene,
+                        temp / f"overlay_{index}.png",
+                        scene_index=index,
+                        visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
+                    )
+                source_clip = clip if clip is not None else agnes_clip
                 make_video_segment_from_clip(
-                    clip, overlay, audio, segment, duration,
+                    source_clip, overlay, audio, segment, duration,
                     scene_index=index,
                     visual_style=plan["video"].get("visual_style", "cinematic_documentary"),
                 )

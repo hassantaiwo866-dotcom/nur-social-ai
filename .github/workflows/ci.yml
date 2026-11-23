@@ -5,11 +5,13 @@ on:
     branches:
       - stabilise/day-1-provider-media-resilience
       - day3/production-run-manifest
+      - day4/r2-temporary-image-bridge
   pull_request:
     branches:
       - main
       - stabilise/day-1-provider-media-resilience
       - day3/production-run-manifest
+      - feature/agnes-flash-safe-integration
 
 permissions:
   contents: read
@@ -29,6 +31,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Compile Python files
-        run: python -m py_compile nur_generator.py media_quality.py telegram_publisher.py telegram_review.py tests/test_provider_discovery.py tests/test_telegram_review.py tests/test_media_quality.py tests/test_visual_providers.py cloudflare_visuals.py tests/test_cloudflare_visuals.py
+        run: python -m py_compile nur_generator.py media_quality.py telegram_publisher.py telegram_review.py tests/test_provider_discovery.py tests/test_telegram_review.py tests/test_media_quality.py tests/test_visual_providers.py cloudflare_visuals.py tests/test_cloudflare_visuals.py agnes_video.py tests/test_agnes_video.py scene_video_provider.py tests/test_scene_video_provider.py
       - name: Run unit tests
         run: python -m unittest discover -s tests -v

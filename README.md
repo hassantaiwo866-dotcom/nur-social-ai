@@ -33,3 +33,10 @@ Generated media is written to `output/`. Actions uploads it as an artifact and, 
 Commons metadata can be incomplete or unreliable. The pipeline accepts only identified CC0, public-domain, CC BY or CC BY-SA licences with a licence URL and skips declared restrictions. Attribution is recorded, but humans must inspect the original file page and conditions. If Commons cannot provide a suitable image, the pipeline creates original Nūr-branded artwork locally; it is explicitly labelled as an illustration, not a photograph.
 
 See [visual provider system](docs/VISUAL_PROVIDER_SYSTEM.md), [Day 1 stabilisation notes](docs/DAY1_STABILISATION.md), [Day 2 visual quality notes](docs/DAY2_VISUAL_QUALITY.md) and [private Telegram review setup](docs/TELEGRAM_PRIVATE_REVIEW.md).
+
+
+## Day 4 — direct image-to-video handoff
+
+The Day 4 feature branch sends a Nūr-generated scene image to Agnes Video 2.5 Flash as inline Base64 in the `first_frame` field (`mode: img2video`). No temporary hosting, public URL, storage subscription, or R2 credentials are required. Existing stock-video footage remains preferred; Agnes is optional and local FFmpeg still-motion remains the fallback.
+
+Live use remains disabled until configured. It requires the existing `AGNES_API_KEY` secret and explicit opt-in plus confirmation that the Flash model is currently $0. No paid model fallback is permitted. Images are limited to 10 MiB and PNG/JPEG/WebP. The API receives image bytes directly; no image hosting is created. Tests use mocked requests only; no live Agnes generation has been performed.
