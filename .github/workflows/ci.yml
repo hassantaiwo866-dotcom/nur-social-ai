@@ -5,11 +5,13 @@ on:
     branches:
       - stabilise/day-1-provider-media-resilience
       - day3/production-run-manifest
+      - day4/r2-temporary-image-bridge
   pull_request:
     branches:
       - main
       - stabilise/day-1-provider-media-resilience
       - day3/production-run-manifest
+      - feature/agnes-flash-safe-integration
 
 permissions:
   contents: read
