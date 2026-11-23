@@ -820,22 +820,10 @@ def create_end_card(destination):
 
 
 def run_qa(image_path, video_path, plan):
+    from output_validation import validate_media_outputs
+
     failures = []
-
-    with Image.open(image_path) as image:
-        if image.size != (1080, 1350):
-            failures.append("Editorial image dimensions are incorrect.")
-
-    if not video_path.exists() or video_path.stat().st_size < 50000:
-        failures.append("Video is missing or too small.")
-
-    if video_path.exists():
-        duration = probe_duration(video_path)
-
-        if not 12 <= duration <= 60:
-            failures.append(
-                f"Unexpected video duration: {duration:.1f}s."
-            )
+    output_validation = validate_media_outputs(image_path, video_path)
 
     all_text = json.dumps(plan, ensure_ascii=False)
 
@@ -851,42 +839,30 @@ def run_qa(image_path, video_path, plan):
         failures.append("Video scenes must contain four distinct visual prompts.")
 
     harmful_terms = [
-        "pathetic",
-        "loser",
-        "worthless",
-        "lazy",
-        "punish yourself",
-        "you should be ashamed",
+        "pathetic", "loser", "worthless", "lazy",
+        "punish yourself", "you should be ashamed",
     ]
-
     lowered = all_text.lower()
-
     for term in harmful_terms:
         if term in lowered:
-            failures.append(
-                f"Potentially shaming language found: {term}"
-            )
+            failures.append(f"Potentially shaming language found: {term}")
 
     if failures:
-        raise RuntimeError(
-            "Quality checks failed:\n- "
-            + "\n- ".join(failures)
-        )
+        raise RuntimeError("Quality checks failed:\\n- " + "\\n- ".join(failures))
 
     return {
         "status": "passed",
         "checks": [
-            "Editorial image dimensions",
-            "Video file and duration",
+            *output_validation["checks"],
             "Generated text brand spelling",
             "Four distinct scene visual prompts",
             "Basic non-shaming language check",
         ],
+        "media_metadata": output_validation["metadata"],
         "manual_review_required": True,
         "manual_review_note": (
-            "Automated checks cannot reliably detect "
-            "watermarks, poor composition or visual defects. "
-            "Review both assets before publishing."
+            "Automated checks cannot reliably detect watermarks, poor composition "
+            "or visual defects. Review both assets before publishing."
         ),
     }
 
