@@ -897,7 +897,11 @@ async def run_pipeline():
 
     plan = generate_editorial_plan(brand, history)
     editorial_quality = evaluate_editorial_plan(plan)
-    print(f"Editorial quality: {editorial_quality[\"score\"]}/{editorial_quality[\"max_score\"]} ({editorial_quality[\"checks_passed\"]}/{editorial_quality[\"checks_total\"]} checks)")
+    quality_score = editorial_quality["score"]
+    quality_max = editorial_quality["max_score"]
+    quality_passed = editorial_quality["checks_passed"]
+    quality_total = editorial_quality["checks_total"]
+    print(f"Editorial quality: {quality_score}/{quality_max} ({quality_passed}/{quality_total} checks)")
     if editorial_quality["warnings"]:
         print("Editorial warnings:")
         for warning in editorial_quality["warnings"]:
