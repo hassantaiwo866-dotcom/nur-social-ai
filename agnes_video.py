@@ -110,7 +110,7 @@ def generate_video(
         raise TimeoutError("Agnes video generation did not finish within the polling limit.")
 
     video_url = result.get("url") if isinstance(result, dict) else None
-    if not isinstance(video_url, str) or urlparse(video_url).scheme != "https":
+    if not isinstance(video_url, str) or urlparse(video_url).scheme != "https" or not urlparse(video_url).hostname:
         raise RuntimeError("Agnes completed response did not contain a secure video URL.")
 
     download = session.get(video_url, timeout=120)
