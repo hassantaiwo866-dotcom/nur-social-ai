@@ -104,8 +104,8 @@ Official references:
 - Maximum image size is 10 MiB; accepted types are PNG, JPEG and WebP.
 - Signed URL lifetime is constrained to 60–900 seconds; default 600 seconds.
 - R2 objects use random keys under `nur-media-temp/`, private/no-store cache headers and metadata marking the purpose as an Agnes reference.
-- The storage helper is isolated and is **not yet wired** into `agnes_video.generate_video` or `nur_generator.py`. Production orchestration must wrap the Agnes generation call inside `temporary_image_url(...)` so deletion occurs only after Agnes has finished fetching the reference.
-- Unit tests mock the storage client. No R2 bucket, credentials, uploads, signed URLs, or live Agnes jobs have been configured or tested.
+- `scene_video_provider.py` now connects the private R2 context to the Agnes adapter, and `nur_generator.py` calls it only for Nūr-generated still images when both provider switches are enabled. The signed-URL context stays open for the full Agnes create/poll/download operation, then attempts object deletion. Existing Pixabay stock-video selection remains first; if Agnes/R2 is disabled or fails, the pipeline uses its existing local FFmpeg still-motion path.
+- Unit tests mock R2 and Agnes. They cover storage cleanup, feature gates, image size/type validation, URL lifetime, signed-URL context lifetime, duration bounds and safe local-motion fallback. No R2 bucket, credentials, uploads, real signed URLs, or live Agnes jobs have been configured or tested.
 
 ### R2 account cost controls
 Cloudflare's published Standard R2 free tier currently includes 10 GB-month storage, 1 million Class A operations and 10 million Class B operations per month, with no egress charges. Usage above the included allowance is billed. Keep generated reference images small, cap uploads, monitor usage, and do not enable R2 billing or any paid overage intentionally. Pricing can change; check the dashboard before activating.
