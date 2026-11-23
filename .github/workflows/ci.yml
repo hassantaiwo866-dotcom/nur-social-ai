@@ -9,6 +9,8 @@ on:
       - day5/brand-token-system
       - day6/transition-safety-tests
       - day7/audio-duration-guard
+      - day7/audio-duration-guard
+      - day8/animated-brand-accent
   pull_request:
     branches:
       - main

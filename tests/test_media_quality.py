@@ -99,6 +99,8 @@ class MediaQualityTests(unittest.TestCase):
         self.assertIn("0B5D3B", a)
         self.assertIn("y=151", a)
         self.assertIn("y=1435", b)
+        self.assertIn("min(t/", a)
+        self.assertIn("min(t/", b)
         self.assertNotEqual(a, b)
 
     def test_voice_audio_filter_has_polish_and_fades(self):
@@ -248,3 +250,24 @@ class VoiceAudioDurationSafetyTests(unittest.TestCase):
             with self.subTest(duration=duration):
                 with self.assertRaisesRegex(ValueError, "finite"):
                     voice_audio_filter(duration)
+
+
+
+class AnimatedBrandAccentTests(unittest.TestCase):
+    def test_accent_expression_moves_in_opposite_directions_by_scene(self):
+        from nur_generator import motion_accent_filter
+        even = motion_accent_filter(0, duration=4)
+        odd = motion_accent_filter(1, duration=4)
+        self.assertIn("min(t/4.000,1)", even)
+        self.assertIn("80+1*180", even)
+        self.assertIn("800-180*min(t/4.000,1)", odd)
+        self.assertIn("color=0B5D3B@1", even)
+
+    def test_accent_duration_is_bounded_and_invalid_values_are_safe(self):
+        from nur_generator import motion_accent_filter
+        short = motion_accent_filter(0, duration=0.01)
+        long = motion_accent_filter(0, duration=100)
+        invalid = motion_accent_filter(0, duration=float("nan"))
+        self.assertIn("min(t/0.250,1)", short)
+        self.assertIn("min(t/4.000,1)", long)
+        self.assertIn("min(t/4.000,1)", invalid)
