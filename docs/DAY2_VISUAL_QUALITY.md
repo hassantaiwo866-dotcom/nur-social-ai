@@ -139,3 +139,12 @@ Unit tests cover photo processing, vertical frame dimensions and caption overflo
 - Added finite-duration validation to prevent invalid FFmpeg filter values from NaN or infinity. Negative/very short durations retain a safe minimum of 0.25 seconds.
 - Regression tests cover negative and non-finite durations.
 - No additional audio provider, music service, dependency or cost was introduced. Automated verification pending.
+
+
+## Day 8 — animated emerald accent
+
+- Replaced the static accent rule with a restrained horizontal travel animation using FFmpeg's per-frame drawbox expression.
+- Alternates travel direction across scenes; cinematic-documentary and collage styles retain their respective vertical positions.
+- Motion duration is bounded; invalid values use a safe default.
+- Regression tests verify direction, colour, style position and duration handling. Visual appearance still requires inspection of an actual render.
+- No new dependency, API, credential or cost.
