@@ -10,9 +10,6 @@ on:
       - day6/transition-safety-tests
       - day7/audio-duration-guard
       - day8/animated-brand-accent
-      - day7/audio-duration-guard
-      - day7/audio-duration-guard
-      - day8/animated-brand-accent
       - day9/output-validation
   pull_request:
     branches:
@@ -23,6 +20,9 @@ on:
       - day4/r2-temporary-image-bridge
       - day5/brand-token-system
       - day6/transition-safety-tests
+      - day7/audio-duration-guard
+      - day8/animated-brand-accent
+      - day9/output-validation
 
 permissions:
   contents: read
