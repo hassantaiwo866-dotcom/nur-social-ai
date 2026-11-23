@@ -17,6 +17,15 @@ This closeout adds regression coverage for the Day 2 visual system already prese
 
 Added `.github/workflows/day2-visual-tests.yml` to install the pinned project requirements and run the complete unittest suite on pull requests targeting the stabilisation branch. It can also be run manually with `workflow_dispatch`.
 
+## Final visual refinement
+
+A further local-only refinement addresses two repeat-pattern causes found during review of a generated sample:
+
+- Stock image and video searches now include concise action/context terms from the matching scene narration as well as the scene image prompt.
+- Pixabay photo and video retrieval can exclude asset IDs already selected earlier in the same package, reducing repeated footage or photographs across scenes. Existing attribution records supply the exclusion set.
+
+The change does not guarantee semantic relevance or unique-looking scenes: search libraries may return limited results, and human review remains necessary. It does not change provider order, licence checks, renderer behavior, paid-provider flags, or publication approval.
+
 ## Final regression coverage added
 
 `tests/test_day2_visual_closeout.py` checks:
@@ -25,7 +34,7 @@ Added `.github/workflows/day2-visual-tests.yml` to install the pinned project re
 2. Rejection of captions that cannot fit within the three-line limit.
 3. Integration of the four-scene continuity direction into a payoff generation prompt.
 
-These tests are deterministic and local-only. They do not call Gemini, Groq, Pixabay, Cloudflare, Telegram, or any paid service.
+These tests are deterministic and local-only. They do not call Gemini, Groq, Pixabay, Cloudflare, Telegram, or any paid service. Additional coverage verifies narration-derived query terms and skipping an already-selected Pixabay photo ID.
 
 ## Completion criteria
 

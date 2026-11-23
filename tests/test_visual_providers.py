@@ -69,12 +69,45 @@ class VisualProviderTests(unittest.TestCase):
             self.assertEqual(registry[0]["asset_id"], 12)
             self.assertEqual(registry[0]["license"], "Pixabay Content License")
 
+    def test_pixabay_photo_skips_previously_selected_asset(self):
+        with tempfile.TemporaryDirectory() as folder:
+            import io
+            buffer = io.BytesIO()
+            Image.new("RGB", (1600, 1200), "#456789").save(buffer, "JPEG")
+            search = Mock()
+            search.raise_for_status.return_value = None
+            search.json.return_value = {"hits": [
+                {"id": 12, "largeImageURL": "https://cdn.example/duplicate.jpg",
+                 "imageWidth": 1600, "imageHeight": 1200},
+                {"id": 13, "largeImageURL": "https://cdn.example/new.jpg",
+                 "imageWidth": 1600, "imageHeight": 1200,
+                 "user": "creator", "pageURL": "https://pixabay.com/photos/13/",
+                 "tags": "fresh scene"},
+            ]}
+            download = Mock()
+            download.raise_for_status.return_value = None
+            download.content = buffer.getvalue()
+            session = Mock()
+            session.get.side_effect = [search, download]
+            registry = []
+            result = providers.search_pixabay_photo(
+                "fresh scene", Path(folder) / "photo.jpg", 720, 1280,
+                api_key="test-key", session=session, registry=registry,
+                exclude_asset_ids={"12"},
+            )
+            self.assertTrue(result.exists())
+            self.assertEqual(registry[0]["asset_id"], 13)
+            self.assertEqual(session.get.call_args_list[1].args[0],
+                             "https://cdn.example/new.jpg")
+
     @patch("visual_providers.subprocess.run")
     def test_pixabay_video_accepts_high_resolution_landscape_for_vertical_reframe(self, probe):
         with tempfile.TemporaryDirectory() as folder:
             search = Mock()
             search.raise_for_status.return_value = None
-            search.json.return_value = {"hits": [{
+            search.json.return_value = {"hits": [
+                {"id": 87, "duration": 12, "videos": {}},
+                {
                 "id": 88, "duration": 12, "user": "creator",
                 "pageURL": "https://pixabay.com/videos/id-88/",
                 "tags": "person walking",
@@ -94,8 +127,10 @@ class VisualProviderTests(unittest.TestCase):
             result = providers.search_pixabay_video(
                 "person walking", Path(folder) / "clip.mp4",
                 api_key="test-key", session=session, registry=registry,
+                exclude_asset_ids={"87"},
             )
             self.assertTrue(result.exists())
+            self.assertEqual(registry[0]["asset_id"], 88)
             self.assertEqual(registry[0]["media_type"], "stock_video")
             params = session.get.call_args_list[0].kwargs["params"]
             self.assertNotIn("orientation", params)

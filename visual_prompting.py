@@ -56,9 +56,15 @@ def compose_generation_prompt(scene_prompt: str, *, camera_direction: str = "",
     ])
 
 
-def build_stock_search_query(scene_prompt: str, *, max_words: int = 12) -> str:
-    """Extract subject/action terms for a stock library instead of sending prose."""
-    words = re.findall(r"[A-Za-z][A-Za-z'-]{1,}", str(scene_prompt or "").lower())
+def build_stock_search_query(scene_prompt: str, *, narration: str = "",
+                             max_words: int = 12) -> str:
+    """Build a concise stock query from the scene subject and narrated action.
+
+    Subject terms retain priority; narration contributes action/context terms
+    when the image prompt alone is too generic. This is deterministic and local.
+    """
+    source = f"{scene_prompt or ''} {narration or ''}"
+    words = re.findall(r"[A-Za-z][A-Za-z'-]{1,}", source.lower())
     selected = []
     for word in words:
         if word in STOCK_STOP_WORDS or word in selected:

@@ -114,8 +114,9 @@ def search_pixabay_photo(query: str, destination: str | Path,
                          width: int, height: int, *,
                          api_key: str | None = None,
                          registry: list[dict[str, Any]] | None = None,
+                         exclude_asset_ids: set[str] | None = None,
                          session=requests) -> Path:
-    """Retrieve a high-resolution Pixabay photograph and preserve attribution."""
+    """Retrieve an unused high-resolution Pixabay photograph and preserve attribution."""
     payload = _pixabay_request(
         PIXABAY_API,
         {"q": query[:100], "image_type": "photo",
@@ -127,7 +128,10 @@ def search_pixabay_photo(query: str, destination: str | Path,
     )
     hits = payload.get("hits", [])
     hits.sort(key=lambda item: (item.get("imageWidth", 0) * item.get("imageHeight", 0)), reverse=True)
+    excluded = {str(value) for value in (exclude_asset_ids or set())}
     for item in hits:
+        if str(item.get("id")) in excluded:
+            continue
         url = item.get("largeImageURL") or item.get("webformatURL")
         if not url:
             continue
@@ -156,8 +160,9 @@ def search_pixabay_video(query: str, destination: str | Path, *,
                          api_key: str | None = None,
                          min_width: int = 1280, min_height: int = 720,
                          registry: list[dict[str, Any]] | None = None,
+                         exclude_asset_ids: set[str] | None = None,
                          session=requests) -> Path:
-    """Download a portrait stock-video clip and verify it with ffprobe."""
+    """Download an unused stock-video clip and verify it with ffprobe."""
     payload = _pixabay_request(
         PIXABAY_VIDEO_API,
         {"q": query[:100], "video_type": "film",
@@ -171,7 +176,10 @@ def search_pixabay_video(query: str, destination: str | Path, *,
     hits.sort(key=lambda item: item.get("duration", 0) > 0, reverse=True)
     path = Path(destination)
     path.parent.mkdir(parents=True, exist_ok=True)
+    excluded = {str(value) for value in (exclude_asset_ids or set())}
     for item in hits:
+        if str(item.get("id")) in excluded:
+            continue
         variants = item.get("videos", {})
         candidates = sorted(
             variants.values(),

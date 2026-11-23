@@ -32,6 +32,15 @@ class VisualPromptingTests(unittest.TestCase):
         self.assertEqual(query, "writing notebook")
         self.assertLessEqual(len(query.split()), 12)
 
+    def test_stock_query_uses_narration_to_add_action_context(self):
+        query = build_stock_search_query(
+            "A person beside a window",
+            narration="They write a short plan before returning to focused work.",
+        )
+        self.assertIn("window", query)
+        self.assertIn("write", query)
+        self.assertIn("plan", query)
+
     def test_stock_query_has_fallback(self):
         self.assertEqual(build_stock_search_query("cinematic realistic natural light"), "wellbeing personal growth everyday life")
 
