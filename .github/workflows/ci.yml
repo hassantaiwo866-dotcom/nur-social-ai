@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - stabilise/day-1-provider-media-resilience
+      - day3/production-run-manifest
   pull_request:
     branches:
       - main
       - stabilise/day-1-provider-media-resilience
+      - day3/production-run-manifest
 
 permissions:
   contents: read
