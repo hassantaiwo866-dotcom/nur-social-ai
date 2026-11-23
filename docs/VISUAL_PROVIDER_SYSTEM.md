@@ -30,7 +30,7 @@ The provider adapters are implemented and unit-tested independently. The next in
 ## Cloudflare Workers AI — free-plan image generation
 
 - Agnes is not currently integrated. It remains a candidate pending a verified free-key smoke test and a check of current model pricing in the platform console. Do not infer that every Agnes model is free: `agnes-video-2.5` is listed as paid, while `agnes-video-2.5-flash` is the temporary free-price candidate. Replicate/MiniMax remains excluded.
-- The only currently integrated visual AI API is Cloudflare Workers AI FLUX.1 Schnell: `@cf/black-forest-labs/flux-1-schnell`. Agnes investigation does not change production provider selection yet.
+- The Cloudflare adapter now includes FLUX.2 Klein 4B (`@cf/black-forest-labs/flux-2-klein-4b`) as the image-generation path used by the cinematic generator on this feature branch. FLUX.1 Schnell remains available as a separately callable legacy adapter; it is not an automatic fallback. Agnes remains unintegrated.
 - Cloudflare documents a shared allowance of 10,000 Neurons per day on Workers Free, resetting at 00:00 UTC. Workers Free rejects requests after the allowance is exhausted. Workers Paid can bill usage above the free allocation, so Nūr requires the account to remain on **Workers Free**; do not enable this integration on Workers Paid.
 - The model is priced at 4.80 Neurons per 512x512 tile plus 9.60 Neurons per inference step. Nūr requests four steps and limits generation to five images per Python process. Actual daily output depends on image dimensions and other Workers AI use in the same account.
 - The API is disabled by default. After account verification, configure Actions secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, then repository variables `CLOUDFLARE_FREE_PLAN_CONFIRMED=yes` and `ENABLE_CLOUDFLARE_IMAGE_GENERATION=true`.
@@ -52,3 +52,20 @@ Official references:
 - API base: `https://apihub.agnes-ai.com/v1`; auth: `Authorization: Bearer <AGNES_API_KEY>`. Official integration instructions: https://github.com/AgnesAI-Labs/skills/tree/main/agnes-ai-models. Official site: https://agnes-ai.com/.
 - Current Nūr status: Agnes adapter and production calls are not present. Do not restore/enable them until an account's free access and $0 model pricing have been checked and a minimal test has succeeded without payment details or billing exposure.
 - Next validation: user creates an Agnes account/key privately; check the model price and key type in the platform console; test one image and one 4-second 720P video, record sanitized status/usage only, and stop on any payment-required or non-zero-price response. Never ask the user to paste the key into chat or commit it.
+
+
+## FLUX.2 Klein 4B integration — feature branch
+
+- Model: `@cf/black-forest-labs/flux-2-klein-4b`; endpoint uses Cloudflare Workers AI REST API.
+- The Klein REST endpoint requires multipart form data, including when no reference images are supplied. The adapter sends prompt, width and height as multipart fields.
+- Klein uses a fixed four-step inference process; Nūr does not send a configurable `steps` field.
+- Supports up to four reference images. Each reference image must be smaller than 512x512. The adapter validates this locally before making a request.
+- Output dimensions are bounded to 256–1920px per side. Nūr's current photo pipeline enforces at least 512px per side to meet its image validation rules.
+- The existing Cloudflare opt-in, explicit Workers Free confirmation, credential checks and five-image per-process cap are shared with FLUX.1 Schnell. The adapter never attempts paid fallback. If generation fails or the shared Workers AI free allowance is exhausted, the pipeline continues through its existing stock/local-illustration fallbacks.
+- The adapter is disabled by default. Existing repository secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` are required, along with repository variables `CLOUDFLARE_FREE_PLAN_CONFIRMED=yes` and `ENABLE_CLOUDFLARE_IMAGE_GENERATION=true`.
+- Unit tests use mocked HTTP responses. They do not verify the live Cloudflare credentials, actual account quota, generated image quality or production cost. A live smoke test requires a deliberate, separately approved generation.
+- Pricing is not zero-cost per image: the current Cloudflare pricing table lists Klein 4B at 5.37 Neurons per 512x512 input tile and 26.05 Neurons per 512x512 output tile. Workers Free includes a shared daily 10,000-Neuron allowance. Check current account usage before enabling production runs.
+
+Official references:
+- FLUX.2 Klein 4B API and multipart/reference-image requirements: https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/
+- Workers AI pricing and free allowance: https://developers.cloudflare.com/workers-ai/platform/pricing/
