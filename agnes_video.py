@@ -6,7 +6,6 @@ This adapter never selects the paid Agnes Video 2.5 model or falls back to it.
 """
 from __future__ import annotations
 
-import base64
 import os
 import time
 from pathlib import Path
