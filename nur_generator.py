@@ -26,8 +26,7 @@ from storytelling import build_audience_connection_direction
 from editorial_quality import evaluate_editorial_plan
 from human_review import build_human_review_checklist
 from production_reliability import new_run_manifest, update_stage, record_failure, save_run_manifest
-from agnes_video import generate_video as generate_agnes_video
-from r2_temp_storage import temporary_image_url
+from scene_video_provider import generate_agnes_scene_clip
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1026,20 +1025,13 @@ async def run_pipeline():
             # Animate only Nūr-generated stills. Existing stock video remains the
             # first choice, and the local FFmpeg still-image path remains fallback.
             if clip is None and photo is not None:
-                agnes_enabled = os.getenv("ENABLE_AGNES_VIDEO_GENERATION", "").strip().lower() in ("1", "true", "yes")
-                r2_enabled = os.getenv("ENABLE_R2_TEMP_STORAGE", "").strip().lower() in ("1", "true", "yes")
-                if agnes_enabled and r2_enabled:
-                    try:
-                        with temporary_image_url(photo) as reference_url:
-                            agnes_clip = generate_agnes_video(
-                                scene["image_prompt"],
-                                temp / f"agnes_scene_{index}.mp4",
-                                seconds=min(12, max(4, math.ceil(duration))),
-                                aspect_ratio="9:16",
-                                reference_images=[reference_url],
-                            )
-                    except Exception as exc:
-                        print(f"Agnes/R2 animation unavailable for scene {index + 1}; using local still motion: {type(exc).__name__}: {str(exc)[:180]}")
+                agnes_clip = generate_agnes_scene_clip(
+                    photo,
+                    scene["image_prompt"],
+                    temp / f"agnes_scene_{index}.mp4",
+                    duration,
+                    logger=lambda message: print(f"Scene {index + 1}: {message}"),
+                )
 
             if clip is not None or agnes_clip is not None:
                 if overlay is None:
