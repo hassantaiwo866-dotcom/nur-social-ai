@@ -7,7 +7,6 @@ on:
       - day3/production-run-manifest
       - day4/r2-temporary-image-bridge
       - day5/brand-token-system
-      - day5/brand-token-system
       - day6/transition-safety-tests
   pull_request:
     branches:
@@ -16,6 +15,7 @@ on:
       - day3/production-run-manifest
       - feature/agnes-flash-safe-integration
       - day4/r2-temporary-image-bridge
+      - day5/brand-token-system
 
 permissions:
   contents: read
